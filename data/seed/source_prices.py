@@ -211,13 +211,18 @@ INCENTIVE_SCHEME = {
 # salesperson can also override any of these live for a single quote.
 # sign convention used by the calculator: see pricing/calc.py COMPONENTS.
 # Seeded at 0 because the source PDFs do not carry these figures yet.
+# Must match the field keys in pricing/calc.py COMPONENTS (drives the DB columns).
 COMPONENT_FIELDS = [
-    "freight_to_dealer",
+    "distributor_margin",
+    "admin_manpower",
+    "handling",
     "cash_discount",
     "quantity_discount",
-    "distributor_margin",
-    "additional_price_support",
+    "dealer_annual_schemes",
+    "contractor_loyalty",
     "jsw_one_ecp",
-    "company_scheme",
-    "distributor_scheme",
+    "shortage",
+    "freight_to_dealer",
+    "additional_price_support",
+    "operational_scheme",
 ]

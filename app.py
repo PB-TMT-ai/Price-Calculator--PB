@@ -202,48 +202,48 @@ def page_calculator():
 
     n = calc.net_price(b["base"], values)
 
-    # --- Net price ---
-    st.metric("Net Price / MT", rupee(n["net"]))
+    # --- Sub-total before incentives ---
+    st.metric("Sub-total / MT (before incentives)", rupee(n["net"]))
 
-    # --- Target-linked incentive (feeds into landed cost) ---
-    st.markdown("**🎯 Target-linked incentive**")
+    # --- Incentives (deducted to reach Net Landed to Dealer) ---
+    st.markdown("**🎯 Incentives (deducted)**")
     inc = q.get_incentive(team)
     ic1, ic2 = st.columns([2, 1])
     ach = ic1.slider("Target achievement %", 0, 130, 100, step=5)
     tier = calc.incentive_for(ach, inc["tiers"])
     tli = float(tier["inr_per_mt"]) if tier else 0.0
-    ic2.metric("Incentive / MT", rupee(tli), tier["label"] if tier else "no slab")
+    ic2.metric("Target-linked / MT", rupee(tli), tier["label"] if tier else "no slab")
 
-    apply_tli = st.checkbox("Apply target-linked incentive to landed cost", value=True)
+    apply_tli = st.checkbox("Apply target-linked incentive", value=True)
     stock_inr = float(inc["meta"].get("stocking_incentive_inr") or 0)
     apply_stock = False
     if stock_inr:
         apply_stock = st.checkbox(
-            f"Apply stocking incentive (₹{stock_inr:,.0f}/MT)", value=False,
+            f"Apply stocking incentive (₹{stock_inr:,.0f}/MT)", value=True,
             help=inc["meta"].get("stocking_incentive_note", ""),
         )
 
     incentive_applied = (tli if apply_tli else 0.0) + (stock_inr if apply_stock else 0.0)
     landed = n["net"] - incentive_applied
 
-    # --- Final landed cost to dealer ---
+    # --- Net landed to dealer ---
     qty = st.number_input("Quantity (MT)", value=1.0, min_value=0.0, step=1.0)
     st.divider()
     l1, l2 = st.columns(2)
-    l1.metric("Landed Cost to Dealer / MT", rupee(landed),
+    l1.metric("Net Landed to Dealer / MT", rupee(landed),
               f"−{rupee(incentive_applied)} incentive" if incentive_applied else None)
     l2.metric(f"Total ({qty:g} MT)", rupee(landed * qty))
 
     with st.expander("🧾 Full break-up"):
-        rows = [("Base price", b["base"])]
+        rows = [("PL + Bending (base)", b["base"])]
         rows += [(f"{ln['label']} ({'+' if ln['sign']>0 else '−'})", ln["effect"])
                  for ln in n["lines"]]
-        rows.append(("Net Price / MT", n["net"]))
+        rows.append(("Sub-total / MT", n["net"]))
         if apply_tli and tli:
             rows.append((f"Target-linked incentive (−) [{tier['label']}]", -tli))
         if apply_stock and stock_inr:
             rows.append(("Stocking incentive (−)", -stock_inr))
-        rows.append(("LANDED COST TO DEALER / MT", landed))
+        rows.append(("NET LANDED TO DEALER / MT", landed))
         st.dataframe(
             pd.DataFrame(rows, columns=["Component", "Rs/MT"])
             .style.format({"Rs/MT": "{:,.0f}"}),

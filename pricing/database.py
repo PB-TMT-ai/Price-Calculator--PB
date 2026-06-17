@@ -102,18 +102,8 @@ CREATE TABLE prices (
     PRIMARY KEY (pl_id, cluster_key)
 );
 
-CREATE TABLE components (
-    cluster_key              TEXT PRIMARY KEY REFERENCES clusters(cluster_key),
-    freight_to_dealer        REAL DEFAULT 0,
-    cash_discount            REAL DEFAULT 0,
-    quantity_discount        REAL DEFAULT 0,
-    distributor_margin       REAL DEFAULT 0,
-    additional_price_support REAL DEFAULT 0,
-    jsw_one_ecp              REAL DEFAULT 0,
-    company_scheme           REAL DEFAULT 0,
-    distributor_scheme       REAL DEFAULT 0,
-    updated_at               TEXT
-);
+-- NOTE: the `components` table is created dynamically from COMPONENT_FIELDS
+-- (see _components_ddl / build_all) so adding a component needs no DDL change.
 
 CREATE TABLE incentive_tiers (
     label       TEXT,
@@ -149,6 +139,21 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def component_fields() -> list[str]:
+    """The component column names (single source of truth: source_prices.py)."""
+    return list(_load_source().COMPONENT_FIELDS)
+
+
+def _components_ddl(fields: list[str]) -> str:
+    cols = ",\n    ".join(f"{f} REAL DEFAULT 0" for f in fields)
+    return (
+        "CREATE TABLE components (\n"
+        "    cluster_key TEXT PRIMARY KEY REFERENCES clusters(cluster_key),\n"
+        f"    {cols},\n"
+        "    updated_at TEXT\n);"
+    )
+
+
 # --------------------------------------------------------------------------- #
 #  Build
 # --------------------------------------------------------------------------- #
@@ -173,6 +178,7 @@ def build_all() -> None:
 
     # Optional persisted component overrides per team.
     comp_overrides = _load_component_overrides()
+    cfields = list(src.COMPONENT_FIELDS)
 
     for team in TEAMS:
         path = db_path(team)
@@ -180,6 +186,7 @@ def build_all() -> None:
             path.unlink()
         conn = sqlite3.connect(path)
         conn.executescript(SCHEMA)
+        conn.executescript(_components_ddl(cfields))
 
         team_clusters = {
             k: v for k, v in src.CLUSTERS.items() if v[2] == team
@@ -217,26 +224,13 @@ def build_all() -> None:
             )
 
         # Component defaults (apply persisted overrides if present).
+        ins_cols = "cluster_key," + ",".join(cfields) + ",updated_at"
+        ins_ph = ",".join(["?"] * (len(cfields) + 2))
         for ck in team_clusters:
             vals = comp_overrides.get(ck, {})
             conn.execute(
-                """INSERT INTO components
-                   (cluster_key,freight_to_dealer,cash_discount,quantity_discount,
-                    distributor_margin,additional_price_support,jsw_one_ecp,
-                    company_scheme,distributor_scheme,updated_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
-                (
-                    ck,
-                    vals.get("freight_to_dealer", 0),
-                    vals.get("cash_discount", 0),
-                    vals.get("quantity_discount", 0),
-                    vals.get("distributor_margin", 0),
-                    vals.get("additional_price_support", 0),
-                    vals.get("jsw_one_ecp", 0),
-                    vals.get("company_scheme", 0),
-                    vals.get("distributor_scheme", 0),
-                    _now(),
-                ),
+                f"INSERT INTO components ({ins_cols}) VALUES ({ins_ph})",
+                (ck, *[vals.get(f, 0) for f in cfields], _now()),
             )
 
         # Incentive scheme.
@@ -285,12 +279,10 @@ def _load_component_overrides() -> dict[str, dict]:
 #  Exports (keep git-trackable copies in sync with the live DB)
 # --------------------------------------------------------------------------- #
 def export_components_csv(team: str) -> None:
+    cols = "cluster_key," + ",".join(component_fields())
     conn = connect(team)
     rows = conn.execute(
-        """SELECT cluster_key,freight_to_dealer,cash_discount,quantity_discount,
-                  distributor_margin,additional_price_support,jsw_one_ecp,
-                  company_scheme,distributor_scheme
-           FROM components ORDER BY cluster_key"""
+        f"SELECT {cols} FROM components ORDER BY cluster_key"
     ).fetchall()
     conn.close()
     SEED_DIR.mkdir(parents=True, exist_ok=True)

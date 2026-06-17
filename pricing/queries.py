@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from .database import connect, export_components_csv, export_price_history_csv
+from .database import (connect, component_fields, export_components_csv,
+                       export_price_history_csv)
 
 
 def _now() -> str:
@@ -96,24 +97,12 @@ def get_components(team: str, cluster_key: str) -> dict:
 
 
 def save_components(team: str, cluster_key: str, values: dict) -> None:
+    fields = component_fields()
+    set_clause = ", ".join(f"{f}=?" for f in fields) + ", updated_at=?"
     conn = connect(team)
     conn.execute(
-        """UPDATE components SET
-             freight_to_dealer=?, cash_discount=?, quantity_discount=?,
-             distributor_margin=?, additional_price_support=?, jsw_one_ecp=?,
-             company_scheme=?, distributor_scheme=?, updated_at=?
-           WHERE cluster_key=?""",
-        (
-            values.get("freight_to_dealer", 0),
-            values.get("cash_discount", 0),
-            values.get("quantity_discount", 0),
-            values.get("distributor_margin", 0),
-            values.get("additional_price_support", 0),
-            values.get("jsw_one_ecp", 0),
-            values.get("company_scheme", 0),
-            values.get("distributor_scheme", 0),
-            _now(), cluster_key,
-        ),
+        f"UPDATE components SET {set_clause} WHERE cluster_key=?",
+        (*[values.get(f, 0) for f in fields], _now(), cluster_key),
     )
     conn.execute(
         "INSERT INTO change_log(ts,entity,detail) VALUES (?,?,?)",

@@ -1,7 +1,7 @@
-cluster_key,freight_to_dealer,cash_discount,quantity_discount,distributor_margin,additional_price_support,jsw_one_ecp,company_scheme,distributor_scheme
-BIHAR,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-JHARKHAND,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-ODISHA_CC,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-ODISHA_WEST,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-SILIGURI_GRP,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-WEST_BENGAL,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+cluster_key,distributor_margin,admin_manpower,handling,cash_discount,quantity_discount,dealer_annual_schemes,contractor_loyalty,jsw_one_ecp,shortage,freight_to_dealer,additional_price_support,operational_scheme
+BIHAR,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+JHARKHAND,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+ODISHA_CC,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+ODISHA_WEST,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+SILIGURI_GRP,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+WEST_BENGAL,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

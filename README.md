@@ -41,13 +41,19 @@ admin = "9999"
 - Choose **Product** (JSW One 550 / JSW One 550 D), **Type** (Straight/Bend),
   **Diameter** (8 / 10 / 12-32 mm) and **Segment** (Retail/Project).
 - See the **base price build-up** (list price + dia extra + bend extra).
-- Adjust **components** — Freight to Dealer, JSW One ECP (add-on), Cash Discount,
-  Distributor's Margin, Additional Price Support, Company/Distributor schemes.
-  Defaults are stored per cluster and **editable live** for any quote.
-- Get **Net Price / MT**, then choose a target achievement % — the
-  **target-linked incentive** (and optional stocking incentive) is deducted to
-  give the **Landed Cost to Dealer / MT** and the total for a quantity, with a
-  full break-up.
+- Adjust **components** (defaults stored per cluster, **editable live**).
+- Result follows the official **Net Landed to Dealer** waterfall:
+
+  ```
+  ( PL + Distributor margin + Admin/manpower + Handling + Bending + CD + QD
+    + Dealer annual schemes/meets/tours + Contractor loyalty + JSW One ECP
+    + Shortage + Freight to dealer )
+  − ( Additional price support + Scheme (operational pricing)
+      + Target-linked incentive + Stocking incentive )
+  = Net Landed to Dealer
+  ```
+  PL + Bending come from the price list; the target-linked incentive depends on
+  the chosen **achievement %**. Full per-MT break-up and quantity total shown.
 - **Blended rate** across a diameter mix.
 - **Navigation** (Calculator / Past Price Lists / Admin) lives in the sidebar,
   separate from the Zone/State/Cluster filters.

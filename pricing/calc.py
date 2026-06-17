@@ -17,19 +17,34 @@ DIAS = ["8", "10", "12-32"]          # 12-32 mm is the list base (no dia extra)
 SEGMENTS = ["retail", "project"]
 TYPES = ["Straight", "Bend"]
 
-# Component sign convention for building the Net Price.
-#   +1  => added to the price
-#   -1  => deducted from the price
+# Net-landed-to-dealer waterfall (per the official formula):
+#
+#   (PL + Distributor margin + Admin/manpower + Handling + Bending + CD + QD
+#    + Dealer annual schemes/meets/tours + Contractor loyalty + JSW One ECP
+#    + Shortage + Freight to dealer)
+#   - (Additional price support + Scheme (operational pricing)
+#      + Target-linked incentive)
+#   = Net landed to dealer
+#
+# PL and Bending come from the price list (handled in base_price()).
+# The Target-linked incentive is conditional on achievement %, so it is applied
+# separately (see the app) rather than as a fixed component here.
+#
+# Sign convention:  +1 => added,  -1 => deducted.
 # A user can always enter a negative number to flip the effect for one quote.
 COMPONENTS = [
-    ("freight_to_dealer",        "Freight to Dealer",        +1),
-    ("jsw_one_ecp",              "JSW One ECP",              +1),
-    ("cash_discount",            "Cash Discount (CD)",       -1),
-    ("quantity_discount",        "Quantity Discount (QD)",   -1),
-    ("distributor_margin",       "Distributor's Margin",     -1),
-    ("additional_price_support", "Additional Price Support", -1),
-    ("company_scheme",           "Company Scheme",           -1),
-    ("distributor_scheme",       "Distributor Scheme",       -1),
+    ("distributor_margin",       "Distributor's Margin",              +1),
+    ("admin_manpower",           "Admin / Manpower",                  +1),
+    ("handling",                 "Handling",                          +1),
+    ("cash_discount",            "Cash Discount (CD)",                +1),
+    ("quantity_discount",        "Quantity Discount (QD)",            +1),
+    ("dealer_annual_schemes",    "Dealer Annual Schemes/Meets/Tours", +1),
+    ("contractor_loyalty",       "Contractor Loyalty",                +1),
+    ("jsw_one_ecp",              "JSW One ECP",                       +1),
+    ("shortage",                 "Shortage",                          +1),
+    ("freight_to_dealer",        "Freight to Dealer",                 +1),
+    ("additional_price_support", "Additional Price Support",          -1),
+    ("operational_scheme",       "Scheme (operational pricing)",      -1),
 ]
 
 
