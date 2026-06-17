@@ -10,13 +10,28 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def get_clusters(team: str) -> list[dict]:
+def get_clusters(team: str, state: str | None = None) -> list[dict]:
     conn = connect(team)
-    rows = conn.execute(
-        "SELECT cluster_key, name, major_city FROM clusters ORDER BY name"
-    ).fetchall()
+    if state:
+        rows = conn.execute(
+            "SELECT cluster_key, name, major_city, state FROM clusters "
+            "WHERE state = ? ORDER BY name", (state,)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT cluster_key, name, major_city, state FROM clusters ORDER BY name"
+        ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_states(team: str) -> list[str]:
+    conn = connect(team)
+    rows = conn.execute(
+        "SELECT DISTINCT state FROM clusters WHERE state IS NOT NULL ORDER BY state"
+    ).fetchall()
+    conn.close()
+    return [r["state"] for r in rows]
 
 
 def get_price_lists(team: str) -> list[dict]:

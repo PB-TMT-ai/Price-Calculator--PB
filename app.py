@@ -15,58 +15,126 @@ from pricing.database import TEAMS
 st.set_page_config(page_title="JSW One TMT Price Calculator",
                    page_icon="🧱", layout="centered")
 
-# Compact styling for phones.
+# JSW One brand styling — compact & mobile friendly.
+JSW_BLUE = "#0A4DA2"
+JSW_DARK = "#06306A"
 st.markdown(
-    """
+    f"""
     <style>
-      .block-container {padding-top: 1.2rem; padding-bottom: 3rem; max-width: 720px;}
-      div[data-testid="stMetricValue"] {font-size: 1.7rem;}
-      .stNumberInput input {font-size: 1rem;}
-      h1 {font-size: 1.5rem !important;}
+      .block-container {{padding-top: 1rem; padding-bottom: 3rem; max-width: 760px;}}
+      div[data-testid="stMetricValue"] {{font-size: 1.7rem; color: {JSW_BLUE};}}
+      .stNumberInput input {{font-size: 1rem;}}
+      .jsw-header {{
+          background: linear-gradient(90deg, {JSW_DARK} 0%, {JSW_BLUE} 100%);
+          color: #fff; padding: 14px 18px; border-radius: 12px;
+          margin-bottom: 14px; display:flex; align-items:center; gap:12px;
+      }}
+      .jsw-header .logo {{
+          background:#fff; color:{JSW_BLUE}; font-weight:800; font-size:1.05rem;
+          padding:6px 10px; border-radius:8px; letter-spacing:.3px;
+      }}
+      .jsw-header .title {{font-size:1.15rem; font-weight:700; line-height:1.2;}}
+      .jsw-header .sub {{font-size:.78rem; opacity:.85;}}
+      .stButton button[kind="primary"] {{background:{JSW_BLUE}; border:0;}}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("🧱 JSW One TMT — Price Calculator")
+
+def brand_header(subtitle: str = "TMT Price Calculator"):
+    st.markdown(
+        f"""
+        <div class="jsw-header">
+          <span class="logo">JSW One</span>
+          <div>
+            <div class="title">{subtitle}</div>
+            <div class="sub">Private Brands · Domestic Sales · prices exclude GST</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  Authentication  (Sales: 1111  ·  Admin: 9999)
+# --------------------------------------------------------------------------- #
+def _passwords() -> dict:
+    # Defaults can be overridden via .streamlit/secrets.toml ([passwords] section).
+    pw = {"1111": "sales", "9999": "admin"}
+    try:
+        sec = st.secrets.get("passwords", {})
+        if sec.get("sales"):
+            pw = {str(sec["sales"]): "sales", str(sec.get("admin", "9999")): "admin"}
+    except Exception:
+        pass
+    return pw
+
+
+def login_gate():
+    if st.session_state.get("role"):
+        return
+    brand_header("TMT Price Calculator")
+    st.subheader("🔒 Sign in")
+    pw = st.text_input("Password", type="password",
+                       placeholder="Sales or Admin password")
+    if st.button("Sign in", type="primary"):
+        role = _passwords().get(pw.strip())
+        if role:
+            st.session_state.role = role
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+    st.caption("Sales team and Admins have separate passwords.")
+    st.stop()
+
+
+login_gate()
+ROLE = st.session_state.role
+brand_header("TMT Price Calculator")
 
 # --------------------------------------------------------------------------- #
 #  Team + page selector
 # --------------------------------------------------------------------------- #
-top = st.columns([1, 1])
-team = top[0].selectbox("Team / Region", TEAMS, key="team")
-page = top[1].selectbox("Screen", ["🧮 Calculator", "📈 Price History", "⚙️ Admin"])
+screens = ["🧮 Calculator", "📈 Price History"]
+if ROLE == "admin":
+    screens.append("⚙️ Admin")
 
-clusters = q.get_clusters(team)
-cl_names = {c["name"]: c["cluster_key"] for c in clusters}
+top = st.columns([1, 1])
+team = top[0].selectbox("Zone", TEAMS, key="team")
+page = top[1].selectbox("Screen", screens)
+
+with st.sidebar:
+    st.markdown(f"**Signed in as:** {ROLE.capitalize()}")
+    if st.button("Log out"):
+        st.session_state.pop("role", None)
+        st.rerun()
 
 
 def rupee(x) -> str:
     return "—" if x is None else f"₹{x:,.0f}"
 
 
+def select_state_cluster(team: str, key: str) -> tuple[str, str]:
+    """State + Cluster dropdowns (State narrows the cluster list). Returns
+    (cluster_key, cluster_name)."""
+    states = q.get_states(team)
+    c1, c2 = st.columns(2)
+    state = c1.selectbox("State", states, key=f"{key}_state")
+    clusters = q.get_clusters(team, state)
+    cl_names = {c["name"]: c["cluster_key"] for c in clusters}
+    cluster_name = c2.selectbox("Cluster / City", list(cl_names.keys()),
+                                key=f"{key}_cluster")
+    return cl_names[cluster_name], cluster_name
+
+
 # --------------------------------------------------------------------------- #
 #  CALCULATOR
 # --------------------------------------------------------------------------- #
 def page_calculator():
-    # --- Pincode lookup (bonus) ---
-    with st.expander("🔎 Find cluster by pincode"):
-        pin = st.text_input("6-digit pincode", max_chars=6, placeholder="e.g. 110001")
-        if pin.strip().isdigit():
-            res = q.resolve_pincode(team, int(pin))
-            if res:
-                st.success(f"**{res['district'].title()}** → {res['name']}")
-            else:
-                other = q.find_team_for_pincode(int(pin))
-                if other:
-                    st.warning(f"That pincode belongs to the **{other}** team. "
-                               f"Switch the Team selector above.")
-                else:
-                    st.error("Pincode not found in any team's coverage.")
-
-    # --- Location & price list ---
-    cluster_name = st.selectbox("Cluster / City", list(cl_names.keys()))
-    cluster_key = cl_names[cluster_name]
+    # --- Location: Zone (top) -> State -> Cluster ---
+    cluster_key, cluster_name = select_state_cluster(team, "calc")
 
     pls = q.get_price_lists(team)
     pl_labels = {f"{p['effective_date']}  ({p['reference']})": p for p in pls}
@@ -172,8 +240,7 @@ def page_calculator():
 #  PRICE HISTORY
 # --------------------------------------------------------------------------- #
 def page_history():
-    cluster_name = st.selectbox("Cluster / City", list(cl_names.keys()))
-    cluster_key = cl_names[cluster_name]
+    cluster_key, cluster_name = select_state_cluster(team, "hist")
     hist = q.get_cluster_price_history(team, cluster_key)
     if not hist:
         st.info("No history.")
@@ -197,13 +264,16 @@ def page_history():
 #  ADMIN
 # --------------------------------------------------------------------------- #
 def page_admin():
+    if ROLE != "admin":
+        st.error("Admins only.")
+        return
     st.warning("Admin screen — changes update the live database and the committed CSVs.")
+    clusters = q.get_clusters(team)
     tab1, tab2, tab3 = st.tabs(["Component defaults", "Add new Price List", "Line-item template"])
 
     # ---- edit component defaults ----
     with tab1:
-        cluster_name = st.selectbox("Cluster", list(cl_names.keys()), key="adm_cl")
-        cluster_key = cl_names[cluster_name]
+        cluster_key, cluster_name = select_state_cluster(team, "adm")
         cur = q.get_components(team, cluster_key)
         vals = {}
         for field, label, sign in calc.COMPONENTS:

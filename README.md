@@ -14,10 +14,27 @@ streamlit run app.py
 
 Open the URL Streamlit prints (works well on a phone browser).
 
+## Access (passwords)
+
+The app opens with a sign-in screen and is branded in the **JSW One** style.
+
+| Role | Password | Can see |
+|------|----------|---------|
+| Sales team | `1111` | Calculator, Price History |
+| Admin | `9999` | Calculator, Price History, **Admin** |
+
+To change them, add a `.streamlit/secrets.toml`:
+
+```toml
+[passwords]
+sales = "1111"
+admin = "9999"
+```
+
 ## What it does
 
 **🧮 Calculator**
-- Pick **Team → Cluster/City** (or look up a cluster by **pincode**).
+- Pick **Zone → State → Cluster/City** (State is filtered by Zone, Cluster by State).
 - Choose **Product** (JSW One 550 / JSW One 550 D), **Type** (Straight/Bend),
   **Diameter** (8 / 10 / 12-32 mm) and **Segment** (Retail/Project).
 - See the **base price build-up** (list price + dia extra + bend extra).

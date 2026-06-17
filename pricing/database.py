@@ -32,15 +32,39 @@ def db_path(team: str) -> Path:
     return DATA_DIR / f"{team.lower()}.db"
 
 
-def connect(team: str) -> sqlite3.Connection:
-    """Open a connection to a team DB (building it first if missing)."""
-    p = db_path(team)
+def _is_healthy(p: Path) -> bool:
+    """A DB is usable only if it has the clusters table populated."""
     if not p.exists():
+        return False
+    try:
+        c = sqlite3.connect(p)
+        n = c.execute("SELECT COUNT(*) FROM clusters").fetchone()[0]
+        c.close()
+        return n > 0
+    except Exception:
+        return False
+
+
+def connect(team: str) -> sqlite3.Connection:
+    """Open a connection to a team DB (rebuilding if missing/empty/stale)."""
+    p = db_path(team)
+    if not _is_healthy(p):
         build_all()
     conn = sqlite3.connect(p, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def _load_source():
+    """Load data/seed/source_prices.py by path (robust across environments)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "source_prices", SEED_DIR / "source_prices.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 # --------------------------------------------------------------------------- #
@@ -51,7 +75,8 @@ CREATE TABLE clusters (
     cluster_key TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
     major_city  TEXT,
-    team        TEXT NOT NULL
+    team        TEXT NOT NULL,
+    state       TEXT
 );
 
 CREATE TABLE price_lists (
@@ -128,8 +153,7 @@ def _now() -> str:
 # --------------------------------------------------------------------------- #
 def build_all() -> None:
     """(Re)build all three team databases from the committed sources."""
-    # Imported lazily so the package has no hard import-time dependency on it.
-    from data.seed import source_prices as src
+    src = _load_source()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -160,8 +184,8 @@ def build_all() -> None:
             k: v for k, v in src.CLUSTERS.items() if v[2] == team
         }
         conn.executemany(
-            "INSERT INTO clusters(cluster_key,name,major_city,team) VALUES (?,?,?,?)",
-            [(k, v[0], v[1], v[2]) for k, v in team_clusters.items()],
+            "INSERT INTO clusters(cluster_key,name,major_city,team,state) VALUES (?,?,?,?,?)",
+            [(k, v[0], v[1], v[2], v[3]) for k, v in team_clusters.items()],
         )
 
         # Price lists + prices.

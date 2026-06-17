@@ -1,5 +1,9 @@
 [theme]
-primaryColor = "#0B5FFF"
+# JSW One brand palette
+primaryColor = "#0A4DA2"          # JSW One blue
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#EEF3FB"
+textColor = "#1A2533"
 base = "light"
 font = "sans serif"
 

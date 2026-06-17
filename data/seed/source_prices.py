@@ -16,31 +16,31 @@ All prices are Rs/MT, excluding GST, for 12-32 mm straight bars (the base).
 Dia extras, bend extra and per-list notes live in PRICE_LISTS[*]["extras"].
 """
 
-# Cluster master: key -> (display name, major_city, team)
+# Cluster master: key -> (display name, major_city, team/zone, state)
 CLUSTERS = {
     # ---- North ----
-    "SRINAGAR":        ("Kashmir (Srinagar)",            "Srinagar",   "North"),
-    "JAMMU":           ("Jammu",                          "Jammu",      "North"),
-    "CHANDIGARH":      ("Chandigarh",                     "Chandigarh", "North"),
-    "HIMACHAL_PRADESH":("Himachal Pradesh (Shimla)",      "Shimla",     "North"),
-    "UTTARAKHAND":     ("Uttarakhand (Dehradun)",         "Dehradun",   "North"),
-    "PUNJAB":          ("Punjab (Ludhiana)",              "Ludhiana",   "North"),
-    "DELHI":           ("Delhi (New Delhi)",              "New Delhi",  "North"),
-    "HARYANA":         ("Haryana (Faridabad)",            "Faridabad",  "North"),
-    "RAJASTHAN":       ("Rajasthan (Jaipur)",             "Jaipur",     "North"),
-    "UTTAR_PRADESH":   ("Uttar Pradesh (Ghaziabad/Kanpur)","Ghaziabad", "North"),
+    "SRINAGAR":        ("Kashmir (Srinagar)",            "Srinagar",   "North",  "Jammu & Kashmir"),
+    "JAMMU":           ("Jammu",                          "Jammu",      "North",  "Jammu & Kashmir"),
+    "CHANDIGARH":      ("Chandigarh",                     "Chandigarh", "North",  "Chandigarh"),
+    "HIMACHAL_PRADESH":("Himachal Pradesh (Shimla)",      "Shimla",     "North",  "Himachal Pradesh"),
+    "UTTARAKHAND":     ("Uttarakhand (Dehradun)",         "Dehradun",   "North",  "Uttarakhand"),
+    "PUNJAB":          ("Punjab (Ludhiana)",              "Ludhiana",   "North",  "Punjab"),
+    "DELHI":           ("Delhi (New Delhi)",              "New Delhi",  "North",  "Delhi"),
+    "HARYANA":         ("Haryana (Faridabad)",            "Faridabad",  "North",  "Haryana"),
+    "RAJASTHAN":       ("Rajasthan (Jaipur)",             "Jaipur",     "North",  "Rajasthan"),
+    "UTTAR_PRADESH":   ("Uttar Pradesh (Ghaziabad/Kanpur)","Ghaziabad", "North", "Uttar Pradesh"),
     # ---- Central ----
-    "CHHATTISGARH":    ("Chhattisgarh (Raipur)",          "Raipur",     "Central"),
-    "MADHYA_PRADESH":  ("Madhya Pradesh (Indore)",        "Indore",     "Central"),
-    "GUJARAT":         ("Gujarat (Ahmedabad)",            "Ahmedabad",  "Central"),
-    "MAHARASHTRA":     ("Maharashtra (Vidharbha)",        "Vidharbha",  "Central"),
+    "CHHATTISGARH":    ("Chhattisgarh (Raipur)",          "Raipur",     "Central","Chhattisgarh"),
+    "MADHYA_PRADESH":  ("Madhya Pradesh (Indore)",        "Indore",     "Central","Madhya Pradesh"),
+    "GUJARAT":         ("Gujarat (Ahmedabad)",            "Ahmedabad",  "Central","Gujarat"),
+    "MAHARASHTRA":     ("Maharashtra (Vidharbha)",        "Vidharbha",  "Central","Maharashtra"),
     # ---- East ----
-    "ODISHA_CC":       ("Odisha Central+Coastal (Bhubaneshwar)","Bhubaneshwar","East"),
-    "ODISHA_WEST":     ("Odisha West",                    "Odisha West","East"),
-    "JHARKHAND":       ("Jharkhand (Ranchi)",             "Ranchi",     "East"),
-    "BIHAR":           ("Bihar (Patna)",                  "Patna",      "East"),
-    "SILIGURI_GRP":    ("Siliguri/Jalpaiguri/Cooch Behar","Siliguri",   "East"),
-    "WEST_BENGAL":     ("West Bengal (Durgapur)",         "Durgapur",   "East"),
+    "ODISHA_CC":       ("Odisha Central+Coastal (Bhubaneshwar)","Bhubaneshwar","East","Odisha"),
+    "ODISHA_WEST":     ("Odisha West",                    "Odisha West","East",   "Odisha"),
+    "JHARKHAND":       ("Jharkhand (Ranchi)",             "Ranchi",     "East",   "Jharkhand"),
+    "BIHAR":           ("Bihar (Patna)",                  "Patna",      "East",   "Bihar"),
+    "SILIGURI_GRP":    ("Siliguri/Jalpaiguri/Cooch Behar","Siliguri",   "East",   "West Bengal"),
+    "WEST_BENGAL":     ("West Bengal (Durgapur)",         "Durgapur",   "East",   "West Bengal"),
 }
 
 # Each price list: effective_date (ISO), reference, validity, notes,
