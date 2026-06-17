@@ -42,14 +42,18 @@ def dia_extra(pl: dict, dia: str, segment: str) -> float:
 
 
 def base_price(pl: dict, price_row: dict, product: str, dia: str,
-               segment: str, btype: str) -> dict:
-    """Build the base price (before components) with a breakdown."""
+               segment: str, btype: str, ecp: float = 0.0) -> dict:
+    """Build the base price (before components) with a breakdown.
+
+    Business rule: if any JSW One ECP amount is applied (ecp != 0), the
+    8 mm / 10 mm diameter differential is waived (set to 0).
+    """
     col = PRODUCTS[product]
     list_price = price_row.get(col)
     if list_price is None:
         return {"available": False, "list_price": None}
 
-    de = dia_extra(pl, dia, segment)
+    de = 0.0 if ecp else dia_extra(pl, dia, segment)
     bend = pl["bend_extra"] if btype == "Bend" else 0.0
     base = list_price + de + bend
     return {
@@ -58,6 +62,7 @@ def base_price(pl: dict, price_row: dict, product: str, dia: str,
         "dia_extra": float(de),
         "bend_extra": float(bend),
         "base": float(base),
+        "dia_waived": bool(ecp) and dia in ("8", "10"),
     }
 
 
@@ -84,7 +89,7 @@ def incentive_for(achievement_pct: float, tiers: list[dict]) -> dict | None:
 
 
 def blended_rate(pl: dict, price_row: dict, product: str, segment: str,
-                 btype: str, mix: dict[str, float]) -> dict | None:
+                 btype: str, mix: dict[str, float], ecp: float = 0.0) -> dict | None:
     """Weighted-average base price across a diameter mix.
 
     mix: {"8": pct, "10": pct, "12-32": pct} (percentages, need not sum to 100;
@@ -102,7 +107,7 @@ def blended_rate(pl: dict, price_row: dict, product: str, segment: str,
         w = max(0.0, pct) / total_w
         if w == 0:
             continue
-        b = base_price(pl, price_row, product, dia, segment, btype)["base"]
+        b = base_price(pl, price_row, product, dia, segment, btype, ecp)["base"]
         rate += w * b
         parts.append({"dia": dia, "weight_pct": w * 100, "base": b})
     return {"blended": rate, "parts": parts}

@@ -152,27 +152,12 @@ def page_calculator():
     segment = c4.selectbox("Segment", [s.capitalize() for s in calc.SEGMENTS]).lower()
 
     price_row = q.get_price(team, pl["id"], cluster_key)
-    b = calc.base_price(pl, price_row, product, dia, segment, btype)
-
-    if not b["available"]:
+    if price_row is None or price_row.get(calc.PRODUCTS[product]) is None:
         st.error(f"No **{product}** price published for {cluster_name} in this list.")
         return
 
-    with st.container(border=True):
-        st.markdown("**Base price build-up**")
-        st.write(
-            pd.DataFrame(
-                [
-                    ("List price (12-32 mm)", b["list_price"]),
-                    (f"Dia extra ({dia} mm, {segment})", b["dia_extra"]),
-                    (f"Bend extra ({btype})", b["bend_extra"]),
-                    ("Base price", b["base"]),
-                ],
-                columns=["Item", "Rs/MT"],
-            ).style.format({"Rs/MT": "{:,.0f}"}).hide(axis="index")
-        )
-
-    # --- Components (defaults from DB, editable live) ---
+    # --- Components (defaults from DB, editable live) — read first so the
+    #     ECP rule (ECP set => 8/10 mm dia differential = 0) can apply. ---
     st.markdown("**Components** (defaults shown — edit for this quote)")
     defaults = q.get_components(team, cluster_key)
     values = {}
@@ -182,6 +167,26 @@ def page_calculator():
         values[field] = cols[i % 2].number_input(
             label + suffix, value=float(defaults.get(field, 0) or 0),
             step=50.0, format="%.0f", key=f"comp_{field}",
+        )
+    ecp = values.get("jsw_one_ecp", 0) or 0
+
+    b = calc.base_price(pl, price_row, product, dia, segment, btype, ecp=ecp)
+
+    with st.container(border=True):
+        st.markdown("**Base price build-up**")
+        dia_label = f"Dia extra ({dia} mm, {segment})"
+        if b["dia_waived"]:
+            dia_label += " — waived (ECP applied)"
+        st.write(
+            pd.DataFrame(
+                [
+                    ("List price (12-32 mm)", b["list_price"]),
+                    (dia_label, b["dia_extra"]),
+                    (f"Bend extra ({btype})", b["bend_extra"]),
+                    ("Base price", b["base"]),
+                ],
+                columns=["Item", "Rs/MT"],
+            ).style.format({"Rs/MT": "{:,.0f}"}).hide(axis="index")
         )
 
     n = calc.net_price(b["base"], values)
@@ -212,7 +217,7 @@ def page_calculator():
             "10":    bc[1].number_input("10 mm %", value=0.0, min_value=0.0, step=5.0),
             "12-32": bc[2].number_input("12-32 mm %", value=100.0, min_value=0.0, step=5.0),
         }
-        br = calc.blended_rate(pl, price_row, product, segment, btype, mix)
+        br = calc.blended_rate(pl, price_row, product, segment, btype, mix, ecp=ecp)
         if br:
             st.metric("Blended base / MT", rupee(br["blended"]))
             st.caption(", ".join(f"{p['dia']}mm: {p['weight_pct']:.0f}%" for p in br["parts"]))
