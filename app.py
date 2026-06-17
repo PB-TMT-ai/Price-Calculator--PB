@@ -132,6 +132,20 @@ def login_gate():
 
 login_gate()
 ROLE = st.session_state.role
+# Hide Streamlit chrome (Fork / GitHub / menu / status / footer) for sales users;
+# admins keep it so they can reach Manage app, etc.
+if ROLE != "admin":
+    st.markdown(
+        """
+        <style>
+          [data-testid="stToolbar"], [data-testid="stToolbarActions"],
+          [data-testid="stStatusWidget"], #MainMenu, header [data-testid="stHeader"],
+          footer, [data-testid="stDecoration"],
+          .viewerBadge_container__1QSob, [class*="viewerBadge"] { display: none !important; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 brand_header("TMT Price Calculator")
 
 # --------------------------------------------------------------------------- #
