@@ -311,19 +311,31 @@ def page_calculator():
                            file_name=f"jsw_quote_{cluster_key.lower()}.txt",
                            mime="text/plain")
 
-    with st.expander("⚖️ Blended rate (diameter mix)"):
-        st.caption("Enter the % share of each diameter in the order.")
+    with st.expander("⚖️ Blended rate (mixed-diameter order)"):
+        st.caption("Enter the quantity (MT) of each diameter in the order, "
+                   "e.g. 2 MT of 8 mm + 4 MT of 10 mm + 4 MT of 12-32 mm.")
         bc = st.columns(3)
         mix = {
-            "8":     bc[0].number_input("8 mm %", 0.0, step=5.0, key="mix_8"),
-            "10":    bc[1].number_input("10 mm %", 0.0, step=5.0, key="mix_10"),
-            "12-32": bc[2].number_input("12-32 mm %", value=100.0, step=5.0, key="mix_12"),
+            "8":     bc[0].number_input("8 mm (MT)", 0.0, step=0.5, key="mix_8"),
+            "10":    bc[1].number_input("10 mm (MT)", 0.0, step=0.5, key="mix_10"),
+            "12-32": bc[2].number_input("12-32 mm (MT)", 0.0, step=0.5, key="mix_12"),
         }
-        br = calc.blended_rate(pl, price_row, product, segment, btype, mix, ecp=ecp)
-        if br:
-            st.metric("Blended base / MT", rupee(br["blended"]))
-            st.caption(", ".join(f"{p['dia']}mm: {p['weight_pct']:.0f}%"
-                                 for p in br["parts"]))
+        total_mt = sum(mix.values())
+        if total_mt > 0:
+            br = calc.blended_rate(pl, price_row, product, segment, btype, mix, ecp=ecp)
+            flat = sub_total - b["base"]          # components + bending (flat per MT)
+            blended_landed = br["blended"] + flat - incentive_applied
+            mm1, mm2 = st.columns(2)
+            mm1.metric(f"Blended Net Landed / MT{gst_note}", rupee(blended_landed * mult))
+            mm2.metric(f"Order value · {total_mt:g} MT",
+                       rupee(blended_landed * total_mt * mult))
+            st.caption("Mix → " + ", ".join(
+                f"{d} mm: {qmt:g} MT ({qmt / total_mt * 100:.0f}%)"
+                for d, qmt in mix.items() if qmt > 0))
+            st.caption(f"Blended base/MT {rupee(br['blended'])} "
+                       f"+ components {rupee(flat)} − incentives {rupee(incentive_applied)}")
+        else:
+            st.info("Enter MT for at least one diameter.")
 
     st.button("↺ Reset components & incentives", on_click=reset_quote,
               use_container_width=True)
