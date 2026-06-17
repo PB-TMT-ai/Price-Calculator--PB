@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 SEED_DIR = DATA_DIR / "seed"
-TEAMS = ["North", "Central", "East"]
+TEAMS = ["North", "Central", "East", "West"]
 
 
 def db_path(team: str) -> Path:
@@ -158,23 +158,27 @@ def _components_ddl(fields: list[str]) -> str:
 #  Build
 # --------------------------------------------------------------------------- #
 def build_all() -> None:
-    """(Re)build all three team databases from the committed sources."""
+    """(Re)build the per-team databases from the committed sources."""
     src = _load_source()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load pincode -> cluster mapping grouped by team.
+    # cluster_key -> team (CLUSTERS is the single source of truth for zoning).
+    cluster_team = {k: v[2] for k, v in src.CLUSTERS.items()}
+
+    # Load pincode -> cluster, grouping each pincode by its cluster's team
+    # (ignores any stale team column in the CSV).
     pincodes_by_team: dict[str, list[tuple]] = {t: [] for t in TEAMS}
     pin_csv = SEED_DIR / "pincode_cluster.csv"
     if pin_csv.exists():
         with open(pin_csv, newline="") as fp:
             for r in csv.DictReader(fp):
                 pin = (r.get("pincode") or "").strip()
-                if not pin.isdigit():
+                ck = r.get("cluster_key")
+                team = cluster_team.get(ck)
+                if not pin.isdigit() or team is None:
                     continue
-                pincodes_by_team.setdefault(r["team"], []).append(
-                    (int(pin), r["district"], r["cluster_key"])
-                )
+                pincodes_by_team[team].append((int(pin), r["district"], ck))
 
     # Optional persisted component overrides per team.
     comp_overrides = _load_component_overrides()

@@ -36,18 +36,17 @@ TYPES = ["Straight", "Bend"]
 #          value box shown only when on.
 # A user can always enter a negative number to flip the effect for one quote.
 COMPONENTS = [
-    ("distributor_margin",       "Distributor's Margin",              +1, "always"),
-    ("admin_manpower",           "Admin / Manpower",                  +1, "always"),
+    ("distributor_margin_admin", "Distributor's Margin + Admin/Manpower", +1, "always"),
     ("handling",                 "Handling",                          +1, "yesno"),
     ("cash_discount",            "Cash Discount (CD)",                +1, "yesno"),
     ("quantity_discount",        "Quantity Discount (QD)",            +1, "yesno"),
-    ("dealer_annual_schemes",    "Dealer Annual Schemes/Meets/Tours", +1, "applicable"),
-    ("contractor_loyalty",       "Contractor Loyalty",                +1, "applicable"),
-    ("jsw_one_ecp",              "JSW One ECP",                       +1, "yesno"),
+    ("dealer_annual_schemes",    "JSW One Annual Scheme Provision",   +1, "applicable"),
+    ("contractor_loyalty",       "JSW One Contractor Loyalty",        +1, "applicable"),
+    ("jsw_one_ecp",              "JSW One ECP / Blended Rates",        +1, "yesno"),
     ("shortage",                 "Shortage",                          +1, "yesno"),
-    ("freight_to_dealer",        "Freight to Dealer",                 +1, "yesno"),
-    ("additional_price_support", "Additional Price Support",          -1, "yesno"),
-    ("operational_scheme",       "Scheme (operational pricing)",      -1, "yesno"),
+    # Freight to Dealer = secondary freight; only applicable when shipping from
+    # a warehouse (handled in the app via the Ship From / Ship To selection).
+    ("freight_to_dealer",        "Freight to Dealer (secondary)",     +1, "yesno"),
 ]
 
 

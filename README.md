@@ -8,7 +8,7 @@ history and an admin screen to publish new price lists & schemes.
 
 ```bash
 pip install -r requirements.txt
-python build_db.py        # builds data/north.db, central.db, east.db from data/seed/
+python build_db.py        # builds data/{north,central,east,west}.db from data/seed/
 streamlit run app.py
 ```
 
@@ -38,13 +38,17 @@ admin = "9999"
 
 **🧮 Calculator** — guided, mobile-first flow with a **live result card pinned at
 the top** that updates as you change inputs:
-- **Step 1 — Location & product:** Zone → State → Cluster, Product, Diameter, Segment.
+- **Step 1 — Location & product:** Zone → State → Cluster, Product, Diameter
+  (Segment is Retail only), and **Ship From** (Plant/Warehouse) → **Ship To**.
+  Secondary freight applies only from a Warehouse; stocking incentive only on
+  Plant → Warehouse.
 - **Step 2 — Components:** each is a **Yes/No (or Applicable)** toggle; the ₹/MT box
   appears only when on. Bending is a Yes/No toggle (rate from the PL, editable).
-- **Step 3 — Incentives:** Target-linked (Yes reveals achievement %) and Stocking.
-- **Order options:** quantity and an optional **show incl. 18% GST** view.
-- **Share quote** (copy/▼download), **Base build-up** & **Full break-up**,
-  **Blended rate**, and a **Reset** button for a fresh quote.
+- **Step 3 — Incentives:** Target-linked (enter achievement %) and Stocking.
+- **Order options:** decimal quantity (MT) and an optional **incl. 18% GST** view.
+- **Share quote** — copy text, **download .txt**, and a **shareable quote image
+  (.png)** for WhatsApp; plus **Base build-up**, **Full break-up**, **Blended
+  rate** (MT per diameter), and a **Reset** button.
 - Result follows the official **Net Landed to Dealer** waterfall:
 
   ```
@@ -88,15 +92,20 @@ Three **separate SQLite databases** (one per team) under `data/`, each with:
 > `python build_db.py`. Source files are the single source of truth, so the data
 > survives a fresh checkout/redeploy once `source_prices.py` edits are committed.
 
-## Clusters & teams
+## Zones & clusters
 
 Derived from the official price lists + the pincode-cluster master:
 
 - **North** (10): Kashmir/Srinagar, Jammu, Chandigarh, Himachal, Uttarakhand,
   Punjab, Delhi, Haryana, Rajasthan, Uttar Pradesh.
-- **Central** (4): Chhattisgarh, Madhya Pradesh, Gujarat, Maharashtra.
-- **East** (6): Odisha (Central+Coastal), Odisha (West), Jharkhand, Bihar,
-  Siliguri/Jalpaiguri/Cooch Behar, West Bengal (Durgapur).
+- **Central** (5): Chhattisgarh, Madhya Pradesh, Maharashtra,
+  Odisha (Central+Coastal), Odisha (West).
+- **East** (4): Jharkhand, Bihar, Siliguri/Jalpaiguri/Cooch Behar,
+  West Bengal (Durgapur).
+- **West** (1): Gujarat (Ahmedabad).
+
+Zoning lives in `data/seed/source_prices.py` (`CLUSTERS`) — the single source of
+truth; the DB derives each pincode's zone from its cluster.
 
 ## Notes & assumptions
 - **JSW One 550 = Fe-550** ("Basic price + Frt"); **JSW One 550 D = Fe 550D**.

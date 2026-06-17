@@ -1,12 +1,15 @@
 """
-JSW One TMT — Price Calculator (mobile-friendly) for North / Central / East sales teams.
+JSW One TMT — Price Calculator (mobile-friendly) for the zonal sales teams.
 
 Run:  streamlit run app.py
 """
 from __future__ import annotations
 
+from io import BytesIO
+
 import pandas as pd
 import streamlit as st
+from PIL import Image, ImageDraw, ImageFont
 
 from pricing import calc
 from pricing import queries as q
@@ -128,6 +131,41 @@ def reset_quote():
             del st.session_state[k]
 
 
+def _font(size: int, bold: bool = False):
+    name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    for path in (f"/usr/share/fonts/truetype/dejavu/{name}", name):
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
+
+def quote_image(fields: dict) -> bytes:
+    """Render a shareable JSW One quote card as PNG bytes."""
+    W, pad, header_h, line_h = 760, 30, 90, 50
+    rows = list(fields.items())
+    H = header_h + pad + len(rows) * line_h + pad
+    img = Image.new("RGB", (W, H), "white")
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W, header_h], fill=(10, 77, 162))
+    d.text((pad, 20), "JSW One", font=_font(36, True), fill="white")
+    d.text((pad, 60), "TMT Price Quote", font=_font(18), fill=(214, 226, 245))
+    kf, vf, big = _font(21), _font(21, True), _font(30, True)
+    y = header_h + pad
+    for k, v in rows:
+        v = str(v).replace("₹", "Rs ")
+        big_row = (k == "Net Landed / MT")
+        d.text((pad, y), k, font=kf, fill=(90, 100, 115))
+        d.text((W - pad, y - (5 if big_row else 0)), v,
+               font=(big if big_row else vf),
+               fill=((10, 77, 162) if big_row else (26, 37, 51)), anchor="ra")
+        y += line_h
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def comp_control(label: str, kind: str, default, key: str, step: float = 50.0):
     """Render a component control and return its ₹/MT value.
 
@@ -190,8 +228,23 @@ def page_calculator():
         c1, c2 = st.columns(2)
         product = c1.selectbox("Product", list(calc.PRODUCTS.keys()), key="p_product")
         dia = c2.selectbox("Diameter (mm)", calc.DIAS, index=2, key="p_dia")
-        segment = st.radio("Segment", [s.capitalize() for s in calc.SEGMENTS],
-                           horizontal=True, key="p_segment").lower()
+        segment = "retail"   # Retail only
+
+        # --- Ship From / Ship To ---
+        ship_from = st.radio("Ship From", ["Plant", "Warehouse"], horizontal=True,
+                             key="ship_from")
+        if ship_from == "Plant":
+            ship_to = st.radio("Ship To",
+                               ["Warehouse", "Dealer Shop", "Dealer Site",
+                                "Distributor Site"], horizontal=True, key="ship_to")
+        else:
+            ship_to = "Dealer"   # warehouse ships onward to dealer
+            st.caption("Shipping from Warehouse → secondary freight applies.")
+
+    # Secondary freight (Freight to Dealer) applies only when shipping from a
+    # warehouse. Stocking incentive applies only on Plant → Warehouse moves.
+    secondary_freight = (ship_from == "Warehouse")
+    stocking_ok = (ship_from == "Plant" and ship_to == "Warehouse")
 
     price_row = q.get_price(team, pl["id"], cluster_key)
     if price_row is None or price_row.get(calc.PRODUCTS[product]) is None:
@@ -207,9 +260,15 @@ def page_calculator():
         st.caption("Switch on what applies, then enter the ₹/MT value.")
         bend_val = comp_control("Bending (+)", "yesno", pl["bend_extra"], "comp_bending")
         for field, label, sign, toggle in calc.COMPONENTS:
+            if field == "freight_to_dealer" and not secondary_freight:
+                values[field] = 0.0   # secondary freight N/A when shipping from Plant
+                continue
             sgn = " (+)" if sign > 0 else " (−)"
             values[field] = comp_control(label + sgn, toggle,
                                          defaults.get(field, 0) or 0, f"comp_{field}")
+        if not secondary_freight:
+            st.caption("ℹ️ Freight to Dealer (secondary) not applicable when "
+                       "shipping from Plant.")
     ecp = values.get("jsw_one_ecp", 0) or 0
     btype = "Bend" if bend_val else "Straight"
 
@@ -224,17 +283,21 @@ def page_calculator():
     with st.expander("🎯  Step 3 — Incentives (deducted)", expanded=False):
         if st.radio("Target-linked incentive (−)", ["No", "Yes"], horizontal=True,
                     index=0, key="tli_t") == "Yes":
-            ach = st.slider("Target achievement %", 0, 130, 100, step=5, key="ach")
+            ach = st.number_input("Enter target achievement %", min_value=0.0,
+                                  value=100.0, step=1.0, format="%.0f", key="ach")
             tier = calc.incentive_for(ach, inc["tiers"])
             tli = float(tier["inr_per_mt"]) if tier else 0.0
             st.caption(f"Slab: {tier['label'] if tier else 'below lowest slab'} "
                        f"→ {rupee(tli)}/MT")
-        if st.radio("Stocking incentive (−)", ["No", "Yes"], horizontal=True,
-                    index=0, key="stk_t") == "Yes":
-            stock_val = st.number_input(
-                "Stocking incentive ₹/MT",
-                value=float(inc["meta"].get("stocking_incentive_inr") or 0),
-                step=50.0, format="%.0f", key="stk_v")
+        if stocking_ok:
+            if st.radio("Stocking incentive (−)", ["No", "Yes"], horizontal=True,
+                        index=0, key="stk_t") == "Yes":
+                stock_val = st.number_input(
+                    "Stocking incentive ₹/MT",
+                    value=float(inc["meta"].get("stocking_incentive_inr") or 0),
+                    step=50.0, format="%.0f", key="stk_v")
+        else:
+            st.caption("ℹ️ Stocking incentive applies only on Plant → Warehouse.")
 
     incentive_applied = tli + stock_val
     landed = sub_total - incentive_applied
@@ -248,9 +311,10 @@ def page_calculator():
     gst_note = " (incl. GST)" if show_gst else ""
 
     # ---------- Live result card (rendered at the very top) ----------
+    ship_label = f"{ship_from} → {ship_to}" if ship_from == "Plant" else "Warehouse"
     with result:
         st.markdown(f"#### 🧾 {cluster_name}")
-        st.caption(f"{product} · {dia} mm · {btype} · {segment.capitalize()}  |  "
+        st.caption(f"{product} · {dia} mm · {btype} · Retail  |  Ship: {ship_label}  |  "
                    f"PL {pl['effective_date']}")
         m1, m2 = st.columns(2)
         m1.metric(f"Net Landed / MT{gst_note}", rupee(landed * mult),
@@ -300,7 +364,8 @@ def page_calculator():
         quote = (
             "JSW One TMT — Price Quote\n"
             f"Zone / Cluster : {team} / {cluster_name}\n"
-            f"Product        : {product}, {dia} mm, {btype}, {segment.capitalize()}\n"
+            f"Product        : {product}, {dia} mm, {btype}, Retail\n"
+            f"Ship           : {ship_label}\n"
             f"Price list     : {pl['effective_date']} ({pl['reference']})\n"
             f"Net Landed/MT  : {rupee(landed * mult)}{gst_note}\n"
             f"Quantity       : {qty:g} MT\n"
@@ -310,6 +375,21 @@ def page_calculator():
         st.download_button("⬇️ Download quote (.txt)", quote.encode(),
                            file_name=f"jsw_quote_{cluster_key.lower()}.txt",
                            mime="text/plain")
+
+        # Shareable image of the quote (e.g. for WhatsApp), shown below.
+        img = quote_image({
+            "Cluster": cluster_name,
+            "Product": f"{product}, {dia} mm, {btype}, Retail",
+            "Ship": ship_label,
+            "Price list": pl["effective_date"],
+            "Net Landed / MT": f"{rupee(landed * mult)}{gst_note}",
+            "Quantity": f"{qty:g} MT",
+            "Order total": f"{rupee(landed * qty * mult)}{gst_note}",
+        })
+        st.image(img, caption="Quote image (download to share)")
+        st.download_button("⬇️ Download quote image (.png)", img,
+                           file_name=f"jsw_quote_{cluster_key.lower()}.png",
+                           mime="image/png")
 
     with st.expander("⚖️ Blended rate (mixed-diameter order)"):
         st.caption("Enter the quantity (MT) of each diameter in the order, "

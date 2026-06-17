@@ -32,11 +32,12 @@ CLUSTERS = {
     # ---- Central ----
     "CHHATTISGARH":    ("Chhattisgarh (Raipur)",          "Raipur",     "Central","Chhattisgarh"),
     "MADHYA_PRADESH":  ("Madhya Pradesh (Indore)",        "Indore",     "Central","Madhya Pradesh"),
-    "GUJARAT":         ("Gujarat (Ahmedabad)",            "Ahmedabad",  "Central","Gujarat"),
+    # ---- West ----
+    "GUJARAT":         ("Gujarat (Ahmedabad)",            "Ahmedabad",  "West",   "Gujarat"),
     "MAHARASHTRA":     ("Maharashtra (Vidharbha)",        "Vidharbha",  "Central","Maharashtra"),
     # ---- East ----
-    "ODISHA_CC":       ("Odisha Central+Coastal (Bhubaneshwar)","Bhubaneshwar","East","Odisha"),
-    "ODISHA_WEST":     ("Odisha West",                    "Odisha West","East",   "Odisha"),
+    "ODISHA_CC":       ("Odisha Central+Coastal (Bhubaneshwar)","Bhubaneshwar","Central","Odisha"),
+    "ODISHA_WEST":     ("Odisha West",                    "Odisha West","Central","Odisha"),
     "JHARKHAND":       ("Jharkhand (Ranchi)",             "Ranchi",     "East",   "Jharkhand"),
     "BIHAR":           ("Bihar (Patna)",                  "Patna",      "East",   "Bihar"),
     "SILIGURI_GRP":    ("Siliguri/Jalpaiguri/Cooch Behar","Siliguri",   "East",   "West Bengal"),
@@ -393,8 +394,7 @@ INCENTIVE_SCHEME = {
 # Seeded at 0 because the source PDFs do not carry these figures yet.
 # Must match the field keys in pricing/calc.py COMPONENTS (drives the DB columns).
 COMPONENT_FIELDS = [
-    "distributor_margin",
-    "admin_manpower",
+    "distributor_margin_admin",
     "handling",
     "cash_discount",
     "quantity_discount",
@@ -403,6 +403,4 @@ COMPONENT_FIELDS = [
     "jsw_one_ecp",
     "shortage",
     "freight_to_dealer",
-    "additional_price_support",
-    "operational_scheme",
 ]

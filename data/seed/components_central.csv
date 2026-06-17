@@ -1,5 +1,6 @@
-cluster_key,distributor_margin,admin_manpower,handling,cash_discount,quantity_discount,dealer_annual_schemes,contractor_loyalty,jsw_one_ecp,shortage,freight_to_dealer,additional_price_support,operational_scheme
-CHHATTISGARH,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-GUJARAT,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-MADHYA_PRADESH,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-MAHARASHTRA,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+cluster_key,distributor_margin_admin,handling,cash_discount,quantity_discount,dealer_annual_schemes,contractor_loyalty,jsw_one_ecp,shortage,freight_to_dealer
+CHHATTISGARH,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+MADHYA_PRADESH,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+MAHARASHTRA,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+ODISHA_CC,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+ODISHA_WEST,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
