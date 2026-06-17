@@ -97,9 +97,9 @@ brand_header("TMT Price Calculator")
 # --------------------------------------------------------------------------- #
 #  Team + page selector
 # --------------------------------------------------------------------------- #
-screens = ["🧮 Calculator", "📈 Price History"]
+screens = ["🧮 Calculator"]
 if ROLE == "admin":
-    screens.append("⚙️ Admin")
+    screens += ["📈 Past Price Lists", "⚙️ Admin"]
 
 top = st.columns([1, 1])
 team = top[0].selectbox("Zone", TEAMS, key="team")
@@ -137,9 +137,19 @@ def page_calculator():
     cluster_key, cluster_name = select_state_cluster(team, "calc")
 
     pls = q.get_price_lists(team)
-    pl_labels = {f"{p['effective_date']}  ({p['reference']})": p for p in pls}
-    pl_label = st.selectbox("Price List (effective date)", list(pl_labels.keys()))
-    pl = pl_labels[pl_label]
+    if not pls:
+        st.error("No price list available for this zone.")
+        return
+
+    if ROLE == "admin":
+        # Admins may compute on any (incl. past) price list.
+        pl_labels = {f"{p['effective_date']}  ({p['reference']})": p for p in pls}
+        pl_label = st.selectbox("Price List (effective date)", list(pl_labels.keys()))
+        pl = pl_labels[pl_label]
+    else:
+        # Sales team always uses the current (latest) price list only.
+        pl = pls[0]
+        st.markdown(f"**Price List (current):** {pl['effective_date']}  ·  {pl['reference']}")
     if pl.get("note"):
         st.caption(f"📌 {pl['note']}")
 
@@ -245,6 +255,10 @@ def page_calculator():
 #  PRICE HISTORY
 # --------------------------------------------------------------------------- #
 def page_history():
+    if ROLE != "admin":
+        st.error("Past price lists are visible to Admins only.")
+        return
+    st.caption("Past price lists (Admin only) — all dated changes per cluster.")
     cluster_key, cluster_name = select_state_cluster(team, "hist")
     hist = q.get_cluster_price_history(team, cluster_key)
     if not hist:
@@ -353,7 +367,7 @@ def page_admin():
 # --------------------------------------------------------------------------- #
 if page == "🧮 Calculator":
     page_calculator()
-elif page == "📈 Price History":
+elif page == "📈 Past Price Lists":
     page_history()
 else:
     page_admin()

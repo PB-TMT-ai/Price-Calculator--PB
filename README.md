@@ -20,8 +20,11 @@ The app opens with a sign-in screen and is branded in the **JSW One** style.
 
 | Role | Password | Can see |
 |------|----------|---------|
-| Sales team | `1111` | Calculator, Price History |
-| Admin | `9999` | Calculator, Price History, **Admin** |
+| Sales team | `1111` | Calculator (current price list only) |
+| Admin | `9999` | Calculator (any list), **Past Price Lists**, **Admin** |
+
+> The sales team's Calculator is locked to the **current** price list. All
+> **older price lists are Admin-only**, under the **Past Price Lists** screen.
 
 To change them, add a `.streamlit/secrets.toml`:
 
