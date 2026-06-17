@@ -1,0 +1,9 @@
+# Generated SQLite databases (rebuilt from data/seed/ via build_db.py)
+data/*.db
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+.streamlit/secrets.toml
