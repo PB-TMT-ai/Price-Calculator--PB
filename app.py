@@ -241,8 +241,8 @@ def page_calculator():
 
     # ---------- Order options ----------
     o1, o2 = st.columns([1.2, 1])
-    qty = o1.number_input("Quantity (MT)", value=1.0, min_value=0.0, step=1.0,
-                          key="qty_calc")
+    qty = o1.number_input("Quantity (MT)", value=1.0, min_value=0.0, step=0.5,
+                          format="%.2f", key="qty_calc")
     show_gst = o2.toggle("Show incl. 18% GST", key="gst_calc")
     mult = (1 + GST_RATE) if show_gst else 1.0
     gst_note = " (incl. GST)" if show_gst else ""
@@ -316,9 +316,12 @@ def page_calculator():
                    "e.g. 2 MT of 8 mm + 4 MT of 10 mm + 4 MT of 12-32 mm.")
         bc = st.columns(3)
         mix = {
-            "8":     bc[0].number_input("8 mm (MT)", 0.0, step=0.5, key="mix_8"),
-            "10":    bc[1].number_input("10 mm (MT)", 0.0, step=0.5, key="mix_10"),
-            "12-32": bc[2].number_input("12-32 mm (MT)", 0.0, step=0.5, key="mix_12"),
+            "8":     bc[0].number_input("8 mm (MT)", min_value=0.0, step=0.5,
+                                        format="%.2f", key="mix_8"),
+            "10":    bc[1].number_input("10 mm (MT)", min_value=0.0, step=0.5,
+                                        format="%.2f", key="mix_10"),
+            "12-32": bc[2].number_input("12-32 mm (MT)", min_value=0.0, step=0.5,
+                                        format="%.2f", key="mix_12"),
         }
         total_mt = sum(mix.values())
         if total_mt > 0:
