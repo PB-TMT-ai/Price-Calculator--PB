@@ -68,11 +68,19 @@ the top** that updates as you change inputs:
 **📈 Past Price Lists** *(admin only)* — every past price list per cluster, with
 date of change, reference, both grades and a trend chart.
 
-### Updating prices / schemes
-There is **no in-app editing**. Price lists and schemes are maintained in
-`data/seed/source_prices.py`; send updated PLs/schemes to the maintainer, who
-edits the source and redeploys. The DB is rebuilt from source on deploy
-(`python build_db.py`), so a redeploy/reboot picks up the new data.
+### Updating the data (maintainer workflow)
+There is **no in-app editing** — the databases are rebuilt from committed source
+files. To update, share the relevant file(s) with the maintainer:
+
+| You share | Goes into | What it updates |
+|-----------|-----------|-----------------|
+| **Price List** (PDF) | `data/seed/source_prices.py` → `PRICE_LISTS` | A new dated price list (old ones kept as history) |
+| **Scheme** (incentive/stocking) | `data/seed/source_prices.py` → `INCENTIVE_SCHEME` | Target-linked & stocking incentive slabs |
+| **Cluster / pincode** file | `data/seed/pincode_cluster.csv` + `CLUSTERS` | Cluster ↔ pincode ↔ zone/state mapping |
+
+The maintainer edits the source, runs `python build_db.py`, commits and
+redeploys; **Reboot the app** on Streamlit Cloud and the new data is live.
+Everything is versioned in git, so nothing is lost on a fresh checkout.
 
 ## Data model
 
