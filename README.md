@@ -36,12 +36,15 @@ admin = "9999"
 
 ## What it does
 
-**🧮 Calculator**
-- Pick **Zone → State → Cluster/City** (State is filtered by Zone, Cluster by State).
-- Choose **Product** (JSW One 550 / JSW One 550 D), **Type** (Straight/Bend),
-  **Diameter** (8 / 10 / 12-32 mm) and **Segment** (Retail/Project).
-- See the **base price build-up** (list price + dia extra + bend extra).
-- Adjust **components** (defaults stored per cluster, **editable live**).
+**🧮 Calculator** — guided, mobile-first flow with a **live result card pinned at
+the top** that updates as you change inputs:
+- **Step 1 — Location & product:** Zone → State → Cluster, Product, Diameter, Segment.
+- **Step 2 — Components:** each is a **Yes/No (or Applicable)** toggle; the ₹/MT box
+  appears only when on. Bending is a Yes/No toggle (rate from the PL, editable).
+- **Step 3 — Incentives:** Target-linked (Yes reveals achievement %) and Stocking.
+- **Order options:** quantity and an optional **show incl. 18% GST** view.
+- **Share quote** (copy/▼download), **Base build-up** & **Full break-up**,
+  **Blended rate**, and a **Reset** button for a fresh quote.
 - Result follows the official **Net Landed to Dealer** waterfall:
 
   ```
