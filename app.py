@@ -117,6 +117,27 @@ def rupee(x) -> str:
     return "—" if x is None else f"₹{x:,.0f}"
 
 
+def comp_control(label: str, kind: str, default, key: str, step: float = 50.0):
+    """Render a component control and return its ₹/MT value.
+
+    kind = "always"      -> value box, always shown
+           "yesno"       -> Yes/No gate; value box only when Yes
+           "applicable"  -> Applicable/Not Applicable gate; value box only when on
+    """
+    if kind == "always":
+        return st.number_input(f"{label} (₹/MT)", value=float(default or 0),
+                               step=step, format="%.0f", key=f"{key}_v")
+    on_lab, off_lab = (("Applicable", "Not Applicable") if kind == "applicable"
+                       else ("Yes", "No"))
+    c1, c2 = st.columns([1.1, 1])
+    choice = c1.radio(label, [off_lab, on_lab], horizontal=True, index=0,
+                      key=f"{key}_t")
+    if choice == on_lab:
+        return c2.number_input("₹/MT", value=float(default or 0), step=step,
+                               format="%.0f", key=f"{key}_v")
+    return 0.0
+
+
 def select_state_cluster(team: str, key: str) -> tuple[str, str]:
     """State + Cluster dropdowns (State narrows the cluster list). Returns
     (cluster_key, cluster_name)."""
@@ -157,31 +178,31 @@ def page_calculator():
     # --- Product config ---
     c1, c2 = st.columns(2)
     product = c1.selectbox("Product", list(calc.PRODUCTS.keys()))
-    btype = c2.selectbox("Type", calc.TYPES)
-    c3, c4 = st.columns(2)
-    dia = c3.selectbox("Diameter (mm)", calc.DIAS, index=2)
-    segment = c4.selectbox("Segment", [s.capitalize() for s in calc.SEGMENTS]).lower()
+    dia = c2.selectbox("Diameter (mm)", calc.DIAS, index=2)
+    segment = st.selectbox("Segment", [s.capitalize() for s in calc.SEGMENTS]).lower()
 
     price_row = q.get_price(team, pl["id"], cluster_key)
     if price_row is None or price_row.get(calc.PRODUCTS[product]) is None:
         st.error(f"No **{product}** price published for {cluster_name} in this list.")
         return
 
-    # --- Components (defaults from DB, editable live) — read first so the
-    #     ECP rule (ECP set => 8/10 mm dia differential = 0) can apply. ---
-    st.markdown("**Components** (defaults shown — edit for this quote)")
+    # --- Components (toggle-gated) — read first so the ECP rule
+    #     (ECP applied => 8/10 mm dia differential = 0) can take effect. ---
+    st.markdown("**Components** — choose Yes / Applicable to include each.")
     defaults = q.get_components(team, cluster_key)
     values = {}
-    cols = st.columns(2)
-    for i, (field, label, sign) in enumerate(calc.COMPONENTS):
-        suffix = "  (+)" if sign > 0 else "  (−)"
-        values[field] = cols[i % 2].number_input(
-            label + suffix, value=float(defaults.get(field, 0) or 0),
-            step=50.0, format="%.0f", key=f"comp_{field}",
-        )
+    for field, label, sign, toggle in calc.COMPONENTS:
+        sgn = " (+)" if sign > 0 else " (−)"
+        values[field] = comp_control(label + sgn, toggle,
+                                     defaults.get(field, 0) or 0, f"comp_{field}")
     ecp = values.get("jsw_one_ecp", 0) or 0
 
-    b = calc.base_price(pl, price_row, product, dia, segment, btype, ecp=ecp)
+    # Bending (Yes/No, rate from the price list, editable)
+    bend_val = comp_control("Bending (+)", "yesno", pl["bend_extra"], "comp_bending")
+    btype = "Bend" if bend_val else "Straight"
+
+    # Base = PL list price + dia extra (Bending is added as its own line below).
+    b = calc.base_price(pl, price_row, product, dia, segment, "Straight", ecp=ecp)
 
     with st.container(border=True):
         st.markdown("**Base price build-up**")
@@ -193,38 +214,41 @@ def page_calculator():
                 [
                     ("List price (12-32 mm)", b["list_price"]),
                     (dia_label, b["dia_extra"]),
-                    (f"Bend extra ({btype})", b["bend_extra"]),
-                    ("Base price", b["base"]),
+                    ("PL base (12-32 mm + dia)", b["base"]),
                 ],
                 columns=["Item", "Rs/MT"],
             ).style.format({"Rs/MT": "{:,.0f}"}).hide(axis="index")
         )
 
     n = calc.net_price(b["base"], values)
+    sub_total = n["net"] + bend_val
 
     # --- Sub-total before incentives ---
-    st.metric("Sub-total / MT (before incentives)", rupee(n["net"]))
+    st.metric("Sub-total / MT (before incentives)", rupee(sub_total))
 
     # --- Incentives (deducted to reach Net Landed to Dealer) ---
-    st.markdown("**🎯 Incentives (deducted)**")
+    st.markdown("**🎯 Incentives (deducted) — choose Yes to apply.**")
     inc = q.get_incentive(team)
-    ic1, ic2 = st.columns([2, 1])
-    ach = ic1.slider("Target achievement %", 0, 130, 100, step=5)
-    tier = calc.incentive_for(ach, inc["tiers"])
-    tli = float(tier["inr_per_mt"]) if tier else 0.0
-    ic2.metric("Target-linked / MT", rupee(tli), tier["label"] if tier else "no slab")
+    tli, tier = 0.0, None
+    if st.radio("Target-linked incentive (−)", ["No", "Yes"], horizontal=True,
+                index=0, key="tli_t") == "Yes":
+        ach = st.slider("Target achievement %", 0, 130, 100, step=5)
+        tier = calc.incentive_for(ach, inc["tiers"])
+        tli = float(tier["inr_per_mt"]) if tier else 0.0
+        st.caption(f"Slab: {tier['label'] if tier else 'below lowest slab'} "
+                   f"→ {rupee(tli)}/MT")
 
-    apply_tli = st.checkbox("Apply target-linked incentive", value=True)
-    stock_inr = float(inc["meta"].get("stocking_incentive_inr") or 0)
-    apply_stock = False
-    if stock_inr:
-        apply_stock = st.checkbox(
-            f"Apply stocking incentive (₹{stock_inr:,.0f}/MT)", value=True,
-            help=inc["meta"].get("stocking_incentive_note", ""),
+    stock_val = 0.0
+    if st.radio("Stocking incentive (−)", ["No", "Yes"], horizontal=True,
+                index=0, key="stk_t") == "Yes":
+        stock_val = st.number_input(
+            "Stocking incentive ₹/MT",
+            value=float(inc["meta"].get("stocking_incentive_inr") or 0),
+            step=50.0, format="%.0f", key="stk_v",
         )
 
-    incentive_applied = (tli if apply_tli else 0.0) + (stock_inr if apply_stock else 0.0)
-    landed = n["net"] - incentive_applied
+    incentive_applied = tli + stock_val
+    landed = sub_total - incentive_applied
 
     # --- Net landed to dealer ---
     qty = st.number_input("Quantity (MT)", value=1.0, min_value=0.0, step=1.0)
@@ -235,14 +259,16 @@ def page_calculator():
     l2.metric(f"Total ({qty:g} MT)", rupee(landed * qty))
 
     with st.expander("🧾 Full break-up"):
-        rows = [("PL + Bending (base)", b["base"])]
-        rows += [(f"{ln['label']} ({'+' if ln['sign']>0 else '−'})", ln["effect"])
-                 for ln in n["lines"]]
-        rows.append(("Sub-total / MT", n["net"]))
-        if apply_tli and tli:
+        rows = [("PL base (list + dia)", b["base"])]
+        if bend_val:
+            rows.append(("Bending (+)", bend_val))
+        rows += [(f"{ln['label']} ({'+' if ln['sign'] > 0 else '−'})", ln["effect"])
+                 for ln in n["lines"] if ln["value"]]   # show only included ones
+        rows.append(("Sub-total / MT", sub_total))
+        if tli:
             rows.append((f"Target-linked incentive (−) [{tier['label']}]", -tli))
-        if apply_stock and stock_inr:
-            rows.append(("Stocking incentive (−)", -stock_inr))
+        if stock_val:
+            rows.append(("Stocking incentive (−)", -stock_val))
         rows.append(("NET LANDED TO DEALER / MT", landed))
         st.dataframe(
             pd.DataFrame(rows, columns=["Component", "Rs/MT"])

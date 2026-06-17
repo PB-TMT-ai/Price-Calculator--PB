@@ -31,20 +31,23 @@ TYPES = ["Straight", "Bend"]
 # separately (see the app) rather than as a fixed component here.
 #
 # Sign convention:  +1 => added,  -1 => deducted.
+# Toggle:  "always" => no toggle, value always entered;
+#          "yesno" / "applicable" => Yes/No (or Applicable/Not Applicable) gate,
+#          value box shown only when on.
 # A user can always enter a negative number to flip the effect for one quote.
 COMPONENTS = [
-    ("distributor_margin",       "Distributor's Margin",              +1),
-    ("admin_manpower",           "Admin / Manpower",                  +1),
-    ("handling",                 "Handling",                          +1),
-    ("cash_discount",            "Cash Discount (CD)",                +1),
-    ("quantity_discount",        "Quantity Discount (QD)",            +1),
-    ("dealer_annual_schemes",    "Dealer Annual Schemes/Meets/Tours", +1),
-    ("contractor_loyalty",       "Contractor Loyalty",                +1),
-    ("jsw_one_ecp",              "JSW One ECP",                       +1),
-    ("shortage",                 "Shortage",                          +1),
-    ("freight_to_dealer",        "Freight to Dealer",                 +1),
-    ("additional_price_support", "Additional Price Support",          -1),
-    ("operational_scheme",       "Scheme (operational pricing)",      -1),
+    ("distributor_margin",       "Distributor's Margin",              +1, "always"),
+    ("admin_manpower",           "Admin / Manpower",                  +1, "always"),
+    ("handling",                 "Handling",                          +1, "yesno"),
+    ("cash_discount",            "Cash Discount (CD)",                +1, "yesno"),
+    ("quantity_discount",        "Quantity Discount (QD)",            +1, "yesno"),
+    ("dealer_annual_schemes",    "Dealer Annual Schemes/Meets/Tours", +1, "applicable"),
+    ("contractor_loyalty",       "Contractor Loyalty",                +1, "applicable"),
+    ("jsw_one_ecp",              "JSW One ECP",                       +1, "yesno"),
+    ("shortage",                 "Shortage",                          +1, "yesno"),
+    ("freight_to_dealer",        "Freight to Dealer",                 +1, "yesno"),
+    ("additional_price_support", "Additional Price Support",          -1, "yesno"),
+    ("operational_scheme",       "Scheme (operational pricing)",      -1, "yesno"),
 ]
 
 
@@ -86,7 +89,7 @@ def net_price(base: float, components: dict) -> dict:
     """Apply components to a base price; return total + signed line items."""
     lines = []
     total = base
-    for field, label, sign in COMPONENTS:
+    for field, label, sign, *_ in COMPONENTS:
         val = float(components.get(field, 0) or 0)
         effect = sign * val
         total += effect
