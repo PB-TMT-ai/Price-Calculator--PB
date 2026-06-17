@@ -47,8 +47,8 @@ the top** that updates as you change inputs:
 - **Step 3 — Incentives:** Target-linked (enter achievement %) and Stocking.
 - **Order options:** decimal quantity (MT) and an optional **incl. 18% GST** view.
 - **Share quote** — copy text, **download .txt**, and a **shareable quote image
-  (.png)** for WhatsApp; plus **Base build-up**, **Full break-up**, **Blended
-  rate** (MT per diameter), and a **Reset** button.
+  (.png)** for WhatsApp; plus **Base build-up**, **Full break-up**, and a
+  **Reset** button. The result card renders below the quote.
 - Result follows the official **Net Landed to Dealer** waterfall:
 
   ```
