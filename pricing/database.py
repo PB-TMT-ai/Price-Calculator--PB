@@ -106,6 +106,7 @@ CREATE TABLE components (
     cluster_key              TEXT PRIMARY KEY REFERENCES clusters(cluster_key),
     freight_to_dealer        REAL DEFAULT 0,
     cash_discount            REAL DEFAULT 0,
+    quantity_discount        REAL DEFAULT 0,
     distributor_margin       REAL DEFAULT 0,
     additional_price_support REAL DEFAULT 0,
     jsw_one_ecp              REAL DEFAULT 0,
@@ -220,14 +221,15 @@ def build_all() -> None:
             vals = comp_overrides.get(ck, {})
             conn.execute(
                 """INSERT INTO components
-                   (cluster_key,freight_to_dealer,cash_discount,distributor_margin,
-                    additional_price_support,jsw_one_ecp,company_scheme,
-                    distributor_scheme,updated_at)
-                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                   (cluster_key,freight_to_dealer,cash_discount,quantity_discount,
+                    distributor_margin,additional_price_support,jsw_one_ecp,
+                    company_scheme,distributor_scheme,updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
                 (
                     ck,
                     vals.get("freight_to_dealer", 0),
                     vals.get("cash_discount", 0),
+                    vals.get("quantity_discount", 0),
                     vals.get("distributor_margin", 0),
                     vals.get("additional_price_support", 0),
                     vals.get("jsw_one_ecp", 0),
@@ -285,8 +287,9 @@ def _load_component_overrides() -> dict[str, dict]:
 def export_components_csv(team: str) -> None:
     conn = connect(team)
     rows = conn.execute(
-        """SELECT cluster_key,freight_to_dealer,cash_discount,distributor_margin,
-                  additional_price_support,jsw_one_ecp,company_scheme,distributor_scheme
+        """SELECT cluster_key,freight_to_dealer,cash_discount,quantity_discount,
+                  distributor_margin,additional_price_support,jsw_one_ecp,
+                  company_scheme,distributor_scheme
            FROM components ORDER BY cluster_key"""
     ).fetchall()
     conn.close()

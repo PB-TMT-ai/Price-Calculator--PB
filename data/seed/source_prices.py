@@ -214,6 +214,7 @@ INCENTIVE_SCHEME = {
 COMPONENT_FIELDS = [
     "freight_to_dealer",
     "cash_discount",
+    "quantity_discount",
     "distributor_margin",
     "additional_price_support",
     "jsw_one_ecp",

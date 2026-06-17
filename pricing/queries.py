@@ -99,13 +99,14 @@ def save_components(team: str, cluster_key: str, values: dict) -> None:
     conn = connect(team)
     conn.execute(
         """UPDATE components SET
-             freight_to_dealer=?, cash_discount=?, distributor_margin=?,
-             additional_price_support=?, jsw_one_ecp=?, company_scheme=?,
-             distributor_scheme=?, updated_at=?
+             freight_to_dealer=?, cash_discount=?, quantity_discount=?,
+             distributor_margin=?, additional_price_support=?, jsw_one_ecp=?,
+             company_scheme=?, distributor_scheme=?, updated_at=?
            WHERE cluster_key=?""",
         (
             values.get("freight_to_dealer", 0),
             values.get("cash_discount", 0),
+            values.get("quantity_discount", 0),
             values.get("distributor_margin", 0),
             values.get("additional_price_support", 0),
             values.get("jsw_one_ecp", 0),

@@ -25,6 +25,7 @@ COMPONENTS = [
     ("freight_to_dealer",        "Freight to Dealer",        +1),
     ("jsw_one_ecp",              "JSW One ECP",              +1),
     ("cash_discount",            "Cash Discount (CD)",       -1),
+    ("quantity_discount",        "Quantity Discount (QD)",   -1),
     ("distributor_margin",       "Distributor's Margin",     -1),
     ("additional_price_support", "Additional Price Support", -1),
     ("company_scheme",           "Company Scheme",           -1),
