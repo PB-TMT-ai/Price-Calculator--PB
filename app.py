@@ -18,27 +18,64 @@ from pricing.database import TEAMS
 st.set_page_config(page_title="JSW One TMT Price Calculator",
                    page_icon="🧱", layout="centered")
 
-# JSW One brand styling — compact & mobile friendly.
+# JSW One brand styling — colourful, card-based & mobile friendly.
 JSW_BLUE = "#0A4DA2"
 JSW_DARK = "#06306A"
+JSW_SKY = "#EAF1FB"
+JSW_GREY = "#F4F6FA"
+JSW_LINE = "#D7E0EC"
 st.markdown(
     f"""
     <style>
-      .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 760px;}}
-      div[data-testid="stMetricValue"] {{font-size: 1.7rem; color: {JSW_BLUE};}}
-      .stNumberInput input {{font-size: 1rem;}}
+      .stApp {{ background: {JSW_GREY}; }}
+      .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 780px;}}
+
+      /* Header banner */
       .jsw-header {{
           background: linear-gradient(90deg, {JSW_DARK} 0%, {JSW_BLUE} 100%);
-          color: #fff; padding: 14px 18px; border-radius: 12px;
-          margin-bottom: 14px; display:flex; align-items:center; gap:12px;
+          color: #fff; padding: 14px 18px; border-radius: 14px;
+          margin-bottom: 16px; display:flex; align-items:center; gap:12px;
+          box-shadow: 0 4px 14px rgba(10,77,162,.25);
       }}
       .jsw-header .logo {{
           background:#fff; color:{JSW_BLUE}; font-weight:800; font-size:1.05rem;
           padding:6px 10px; border-radius:8px; letter-spacing:.3px;
       }}
       .jsw-header .title {{font-size:1.15rem; font-weight:700; line-height:1.35; padding-top:2px;}}
-      .jsw-header .sub {{font-size:.78rem; opacity:.85;}}
-      .stButton button[kind="primary"] {{background:{JSW_BLUE}; border:0;}}
+      .jsw-header .sub {{font-size:.78rem; opacity:.9;}}
+
+      /* Expanders as cards with a blue accent strip */
+      details[data-testid="stExpander"] {{
+          background:#fff; border:1px solid {JSW_LINE}; border-left:5px solid {JSW_BLUE};
+          border-radius:12px; margin-bottom:12px;
+          box-shadow:0 1px 4px rgba(16,42,76,.06);
+      }}
+      details[data-testid="stExpander"] summary {{
+          font-weight:700; color:{JSW_DARK}; padding:10px 12px;
+      }}
+      details[data-testid="stExpander"] summary:hover {{ color:{JSW_BLUE}; }}
+
+      /* Inputs */
+      div[data-testid="stSelectbox"] label, div[data-testid="stNumberInput"] label,
+      div[data-testid="stRadio"] label, div[data-testid="stTextInput"] label {{
+          font-weight:600; color:{JSW_DARK};
+      }}
+      .stNumberInput input {{font-size: 1rem;}}
+
+      /* Result / metric cards */
+      div[data-testid="stMetricValue"] {{font-size: 1.8rem; color: {JSW_BLUE}; font-weight:800;}}
+      div[data-testid="stVerticalBlockBorderWrapper"] {{
+          background: linear-gradient(180deg, {JSW_SKY} 0%, #fff 60%);
+          border-radius:14px;
+      }}
+
+      /* Buttons */
+      .stButton button[kind="primary"] {{background:{JSW_BLUE}; border:0; font-weight:700;}}
+      .stButton button {{ border-radius:10px; }}
+      .stDownloadButton button {{ border-radius:10px; border:1px solid {JSW_BLUE}; color:{JSW_BLUE}; font-weight:600; }}
+
+      /* Sidebar */
+      section[data-testid="stSidebar"] {{ background:#fff; border-right:1px solid {JSW_LINE}; }}
     </style>
     """,
     unsafe_allow_html=True,
