@@ -113,7 +113,11 @@ with st.sidebar:
         st.session_state.pop("role", None)
         st.rerun()
 
-team = st.selectbox("Zone", TEAMS, key="team")
+team = st.selectbox("Select Zone", TEAMS, index=None,
+                    placeholder="Select Zone", key="team")
+if team is None:
+    st.info("👆 Select a Zone to begin.")
+    st.stop()
 
 
 def rupee(x) -> str:
@@ -187,12 +191,14 @@ def comp_control(label: str, kind: str, default, key: str, step: float = 50.0):
     return 0.0
 
 
-def select_state_cluster(team: str, key: str) -> tuple[str, str]:
-    """State + Cluster dropdowns (State narrows the cluster list). Returns
-    (cluster_key, cluster_name)."""
+def select_state_cluster(team: str, key: str) -> tuple[str | None, str | None]:
+    """State + Cluster dropdowns. Returns (None, None) until a State is chosen."""
     states = q.get_states(team)
     c1, c2 = st.columns(2)
-    state = c1.selectbox("State", states, key=f"{key}_state")
+    state = c1.selectbox("Select State", states, index=None,
+                         placeholder="Select State", key=f"{key}_state")
+    if state is None:
+        return None, None
     clusters = q.get_clusters(team, state)
     cl_names = {c["name"]: c["cluster_key"] for c in clusters}
     cluster_name = c2.selectbox("Cluster / City", list(cl_names.keys()),
@@ -207,6 +213,9 @@ def page_calculator():
     # ---------- Step 1 — Location & product ----------
     with st.expander("📍  Step 1 — Location & product", expanded=True):
         cluster_key, cluster_name = select_state_cluster(team, "calc")
+        if cluster_key is None:
+            st.info("Select a State to load prices.")
+            return
 
         pls = q.get_price_lists(team)
         if not pls:
@@ -402,6 +411,9 @@ def page_history():
         return
     st.caption("Past price lists (Admin only) — all dated changes per cluster.")
     cluster_key, cluster_name = select_state_cluster(team, "hist")
+    if cluster_key is None:
+        st.info("Select a State to view its price history.")
+        return
     hist = q.get_cluster_price_history(team, cluster_key)
     if not hist:
         st.info("No history.")
