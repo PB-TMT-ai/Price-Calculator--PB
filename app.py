@@ -165,10 +165,10 @@ GST_RATE = 0.18  # TMT steel GST
 
 
 def reset_quote():
-    """Clear the per-quote inputs (components, incentives, qty, GST, mix)."""
+    """Clear the per-quote inputs (components, incentives, GST view)."""
     for k in list(st.session_state.keys()):
         if (k.startswith(("comp_", "tli_", "stk_", "mix_"))
-                or k in ("ach", "qty_calc", "gst_calc")):
+                or k in ("ach", "gst_calc")):
             del st.session_state[k]
 
 
@@ -320,36 +320,36 @@ def page_calculator():
     sub_total = n["net"] + bend_val
     n_components = sum(1 for ln in n["lines"] if ln["value"]) + (1 if bend_val else 0)
 
-    # ---------- Step 3 — Incentives ----------
+    # ---------- Step 3 — Incentives (not applicable when shipping from Warehouse) ----------
     inc = q.get_incentive(team)
     tli, tier, stock_val = 0.0, None, 0.0
     with st.expander("🎯  Step 3 — Incentives (deducted)", expanded=False):
-        if st.radio("Target-linked incentive (−)", ["No", "Yes"], horizontal=True,
-                    index=0, key="tli_t") == "Yes":
-            ach = st.number_input("Enter target achievement %", min_value=0.0,
-                                  value=100.0, step=1.0, format="%.0f", key="ach")
-            tier = calc.incentive_for(ach, inc["tiers"])
-            tli = float(tier["inr_per_mt"]) if tier else 0.0
-            st.caption(f"Slab: {tier['label'] if tier else 'below lowest slab'} "
-                       f"→ {rupee(tli)}/MT")
-        if stocking_ok:
-            if st.radio("Stocking incentive (−)", ["No", "Yes"], horizontal=True,
-                        index=0, key="stk_t") == "Yes":
-                stock_val = st.number_input(
-                    "Stocking incentive ₹/MT",
-                    value=float(inc["meta"].get("stocking_incentive_inr") or 0),
-                    step=50.0, format="%.0f", key="stk_v")
+        if ship_from == "Warehouse":
+            st.caption("ℹ️ Incentives are not applicable when shipping from Warehouse.")
         else:
-            st.caption("ℹ️ Stocking incentive applies only on Plant → Warehouse.")
+            if st.radio("Target-linked incentive (−)", ["No", "Yes"], horizontal=True,
+                        index=0, key="tli_t") == "Yes":
+                ach = st.number_input("Enter target achievement %", min_value=0.0,
+                                      value=100.0, step=1.0, format="%.0f", key="ach")
+                tier = calc.incentive_for(ach, inc["tiers"])
+                tli = float(tier["inr_per_mt"]) if tier else 0.0
+                st.caption(f"Slab: {tier['label'] if tier else 'below lowest slab'} "
+                           f"→ {rupee(tli)}/MT")
+            if stocking_ok:
+                if st.radio("Stocking incentive (−)", ["No", "Yes"], horizontal=True,
+                            index=0, key="stk_t") == "Yes":
+                    stock_val = st.number_input(
+                        "Stocking incentive ₹/MT",
+                        value=float(inc["meta"].get("stocking_incentive_inr") or 0),
+                        step=50.0, format="%.0f", key="stk_v")
+            else:
+                st.caption("ℹ️ Stocking incentive applies only on Plant → Warehouse.")
 
     incentive_applied = tli + stock_val
     landed = sub_total - incentive_applied
 
-    # ---------- Order options ----------
-    o1, o2 = st.columns([1.2, 1])
-    qty = o1.number_input("Quantity (MT)", value=1.0, min_value=0.0, step=0.5,
-                          format="%.2f", key="qty_calc")
-    show_gst = o2.toggle("Show incl. 18% GST", key="gst_calc")
+    # ---------- Output options ----------
+    show_gst = st.toggle("Show incl. 18% GST", key="gst_calc")
     mult = (1 + GST_RATE) if show_gst else 1.0
     gst_note = " (incl. GST)" if show_gst else ""
 
@@ -396,8 +396,6 @@ def page_calculator():
             f"Ship           : {ship_label}\n"
             f"Price list     : {pl['effective_date']} ({pl['reference']})\n"
             f"Net Landed/MT  : {rupee(landed * mult)}{gst_note}\n"
-            f"Quantity       : {qty:g} MT\n"
-            f"Order total    : {rupee(landed * qty * mult)}{gst_note}\n"
         )
         st.code(quote, language="text")
         st.download_button("⬇️ Download quote (.txt)", quote.encode(),
@@ -411,8 +409,6 @@ def page_calculator():
             "Ship": ship_label,
             "Price list": pl["effective_date"],
             "Net Landed / MT": f"{rupee(landed * mult)}{gst_note}",
-            "Quantity": f"{qty:g} MT",
-            "Order total": f"{rupee(landed * qty * mult)}{gst_note}",
         })
         st.image(img, caption="Quote image (download to share)")
         st.download_button("⬇️ Download quote image (.png)", img,
@@ -424,11 +420,9 @@ def page_calculator():
         st.markdown(f"#### 🧾 {cluster_name}")
         st.caption(f"{product} · {dia} mm · {btype} · Retail  |  Ship: {ship_label}  |  "
                    f"PL {pl['effective_date']}")
-        m1, m2 = st.columns(2)
-        m1.metric(f"Net Landed / MT{gst_note}", rupee(landed * mult),
+        st.metric(f"Net Landed / MT{gst_note}", rupee(landed * mult),
                   delta=(f"−{rupee(incentive_applied)} incentive"
                          if incentive_applied else None), delta_color="inverse")
-        m2.metric(f"Order total · {qty:g} MT", rupee(landed * qty * mult))
         st.caption(
             f"Sub-total {rupee(sub_total * mult)}/MT "
             f"· {n_components} component(s) applied"

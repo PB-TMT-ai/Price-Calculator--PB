@@ -45,7 +45,9 @@ the top** that updates as you change inputs:
 - **Step 2 — Components:** each is a **Yes/No (or Applicable)** toggle; the ₹/MT box
   appears only when on. Bending is a Yes/No toggle (rate from the PL, editable).
 - **Step 3 — Incentives:** Target-linked (enter achievement %) and Stocking.
-- **Order options:** decimal quantity (MT) and an optional **incl. 18% GST** view.
+  Not applicable when shipping from Warehouse.
+- **Output:** price is shown **per MT** by default, with an optional
+  **incl. 18% GST** view.
 - **Share quote** — copy text, **download .txt**, and a **shareable quote image
   (.png)** for WhatsApp; plus **Base build-up**, **Full break-up**, and a
   **Reset** button. The result card renders below the quote.
