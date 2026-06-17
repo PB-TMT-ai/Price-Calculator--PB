@@ -24,7 +24,7 @@ JSW_DARK = "#06306A"
 st.markdown(
     f"""
     <style>
-      .block-container {{padding-top: 1rem; padding-bottom: 3rem; max-width: 760px;}}
+      .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 760px;}}
       div[data-testid="stMetricValue"] {{font-size: 1.7rem; color: {JSW_BLUE};}}
       .stNumberInput input {{font-size: 1rem;}}
       .jsw-header {{
@@ -36,7 +36,7 @@ st.markdown(
           background:#fff; color:{JSW_BLUE}; font-weight:800; font-size:1.05rem;
           padding:6px 10px; border-radius:8px; letter-spacing:.3px;
       }}
-      .jsw-header .title {{font-size:1.15rem; font-weight:700; line-height:1.2;}}
+      .jsw-header .title {{font-size:1.15rem; font-weight:700; line-height:1.35; padding-top:2px;}}
       .jsw-header .sub {{font-size:.78rem; opacity:.85;}}
       .stButton button[kind="primary"] {{background:{JSW_BLUE}; border:0;}}
     </style>
