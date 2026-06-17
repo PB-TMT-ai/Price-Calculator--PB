@@ -95,21 +95,22 @@ ROLE = st.session_state.role
 brand_header("TMT Price Calculator")
 
 # --------------------------------------------------------------------------- #
-#  Team + page selector
+#  Navigation (separate section, in the sidebar) + Zone filter (in the page)
 # --------------------------------------------------------------------------- #
 screens = ["🧮 Calculator"]
 if ROLE == "admin":
     screens += ["📈 Past Price Lists", "⚙️ Admin"]
 
-top = st.columns([1, 1])
-team = top[0].selectbox("Zone", TEAMS, key="team")
-page = top[1].selectbox("Screen", screens)
-
 with st.sidebar:
+    st.markdown("### Menu")
+    page = st.radio("Go to", screens, label_visibility="collapsed")
+    st.divider()
     st.markdown(f"**Signed in as:** {ROLE.capitalize()}")
     if st.button("Log out"):
         st.session_state.pop("role", None)
         st.rerun()
+
+team = st.selectbox("Zone", TEAMS, key="team")
 
 
 def rupee(x) -> str:
@@ -202,21 +203,54 @@ def page_calculator():
     n = calc.net_price(b["base"], values)
 
     # --- Net price ---
+    st.metric("Net Price / MT", rupee(n["net"]))
+
+    # --- Target-linked incentive (feeds into landed cost) ---
+    st.markdown("**🎯 Target-linked incentive**")
+    inc = q.get_incentive(team)
+    ic1, ic2 = st.columns([2, 1])
+    ach = ic1.slider("Target achievement %", 0, 130, 100, step=5)
+    tier = calc.incentive_for(ach, inc["tiers"])
+    tli = float(tier["inr_per_mt"]) if tier else 0.0
+    ic2.metric("Incentive / MT", rupee(tli), tier["label"] if tier else "no slab")
+
+    apply_tli = st.checkbox("Apply target-linked incentive to landed cost", value=True)
+    stock_inr = float(inc["meta"].get("stocking_incentive_inr") or 0)
+    apply_stock = False
+    if stock_inr:
+        apply_stock = st.checkbox(
+            f"Apply stocking incentive (₹{stock_inr:,.0f}/MT)", value=False,
+            help=inc["meta"].get("stocking_incentive_note", ""),
+        )
+
+    incentive_applied = (tli if apply_tli else 0.0) + (stock_inr if apply_stock else 0.0)
+    landed = n["net"] - incentive_applied
+
+    # --- Final landed cost to dealer ---
     qty = st.number_input("Quantity (MT)", value=1.0, min_value=0.0, step=1.0)
-    m1, m2 = st.columns(2)
-    m1.metric("Net Price / MT", rupee(n["net"]))
-    m2.metric(f"Total ({qty:g} MT)", rupee(n["net"] * qty))
+    st.divider()
+    l1, l2 = st.columns(2)
+    l1.metric("Landed Cost to Dealer / MT", rupee(landed),
+              f"−{rupee(incentive_applied)} incentive" if incentive_applied else None)
+    l2.metric(f"Total ({qty:g} MT)", rupee(landed * qty))
 
     with st.expander("🧾 Full break-up"):
         rows = [("Base price", b["base"])]
         rows += [(f"{ln['label']} ({'+' if ln['sign']>0 else '−'})", ln["effect"])
                  for ln in n["lines"]]
-        rows.append(("NET PRICE / MT", n["net"]))
+        rows.append(("Net Price / MT", n["net"]))
+        if apply_tli and tli:
+            rows.append((f"Target-linked incentive (−) [{tier['label']}]", -tli))
+        if apply_stock and stock_inr:
+            rows.append(("Stocking incentive (−)", -stock_inr))
+        rows.append(("LANDED COST TO DEALER / MT", landed))
         st.dataframe(
             pd.DataFrame(rows, columns=["Component", "Rs/MT"])
             .style.format({"Rs/MT": "{:,.0f}"}),
             hide_index=True, use_container_width=True,
         )
+        st.caption("Incentive slabs: " + " · ".join(
+            f"{t['label']} → ₹{t['inr_per_mt']:,.0f}" for t in inc["tiers"]))
 
     # --- Blended rate ---
     with st.expander("⚖️ Blended rate (diameter mix)"):
@@ -231,24 +265,6 @@ def page_calculator():
         if br:
             st.metric("Blended base / MT", rupee(br["blended"]))
             st.caption(", ".join(f"{p['dia']}mm: {p['weight_pct']:.0f}%" for p in br["parts"]))
-
-    # --- Incentive ---
-    with st.expander("🎯 Target-linked incentive"):
-        inc = q.get_incentive(team)
-        ach = st.slider("Target achievement %", 0, 130, 100, step=5)
-        tier = calc.incentive_for(ach, inc["tiers"])
-        if tier:
-            st.metric("Incentive / MT", rupee(tier["inr_per_mt"]), tier["label"])
-        else:
-            st.info("Below the lowest slab — no incentive.")
-        st.dataframe(
-            pd.DataFrame(inc["tiers"]).rename(
-                columns={"label": "Slab", "min_pct": "Min %", "inr_per_mt": "Rs/MT"}
-            ), hide_index=True, use_container_width=True,
-        )
-        if inc["meta"].get("stocking_incentive_inr"):
-            st.caption(f"➕ Stocking incentive: ₹{inc['meta']['stocking_incentive_inr']}/MT — "
-                       f"{inc['meta'].get('stocking_incentive_note','')}")
 
 
 # --------------------------------------------------------------------------- #

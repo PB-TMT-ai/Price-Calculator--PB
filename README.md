@@ -44,9 +44,13 @@ admin = "9999"
 - Adjust **components** — Freight to Dealer, JSW One ECP (add-on), Cash Discount,
   Distributor's Margin, Additional Price Support, Company/Distributor schemes.
   Defaults are stored per cluster and **editable live** for any quote.
-- Get **Net Price / MT** and total for a quantity, with a full break-up.
-- **Blended rate** across a diameter mix, and the **target-linked incentive**
-  for a given % achievement (+ stocking incentive).
+- Get **Net Price / MT**, then choose a target achievement % — the
+  **target-linked incentive** (and optional stocking incentive) is deducted to
+  give the **Landed Cost to Dealer / MT** and the total for a quantity, with a
+  full break-up.
+- **Blended rate** across a diameter mix.
+- **Navigation** (Calculator / Past Price Lists / Admin) lives in the sidebar,
+  separate from the Zone/State/Cluster filters.
 
 **📈 Price History** — every past price list per cluster, with date of change,
 reference, both grades and a trend chart.
