@@ -39,7 +39,7 @@ COMPONENTS = [
     ("distributor_margin_admin", "Distributor's Margin + Admin/Manpower", +1, "always"),
     ("handling",                 "Handling",                          +1, "yesno"),
     ("cash_discount",            "Cash Discount (CD)",                +1, "yesno"),
-    ("quantity_discount",        "Quantity Discount (QD)",            +1, "yesno"),
+    ("quantity_discount",        "Distributor led Quantity Discount (QD)", +1, "yesno"),
     ("dealer_annual_schemes",    "JSW One Annual Scheme Provision",   +1, "applicable"),
     ("contractor_loyalty",       "JSW One Contractor Loyalty",        +1, "applicable"),
     ("jsw_one_ecp",              "JSW One ECP / Blended Rates",        +1, "yesno"),
