@@ -21,7 +21,7 @@ The app opens with a sign-in screen and is branded in the **JSW One** style.
 | Role | Password | Can see |
 |------|----------|---------|
 | Sales team | `1111` | Calculator (current price list only) |
-| Admin | `9999` | Calculator (any list), **Past Price Lists**, **Admin** |
+| Admin | `9999` | Calculator (any list) + **Past Price Lists** |
 
 > The sales team's Calculator is locked to the **current** price list. All
 > **older price lists are Admin-only**, under the **Past Price Lists** screen.
@@ -55,17 +55,17 @@ admin = "9999"
   PL + Bending come from the price list; the target-linked incentive depends on
   the chosen **achievement %**. Full per-MT break-up and quantity total shown.
 - **Blended rate** across a diameter mix.
-- **Navigation** (Calculator / Past Price Lists / Admin) lives in the sidebar,
+- **Navigation** (Calculator / Past Price Lists) lives in the sidebar,
   separate from the Zone/State/Cluster filters.
 
-**📈 Price History** — every past price list per cluster, with date of change,
-reference, both grades and a trend chart.
+**📈 Past Price Lists** *(admin only)* — every past price list per cluster, with
+date of change, reference, both grades and a trend chart.
 
-**⚙️ Admin**
-- Edit per-cluster **component defaults** (saved to DB + committed CSV).
-- **Publish a new price list** (effective date, reference, validity, note,
-  bend/dia extras, and per-cluster prices) — old lists are retained as history.
-- Download the **line-item template** to fill on every price/scheme change.
+### Updating prices / schemes
+There is **no in-app editing**. Price lists and schemes are maintained in
+`data/seed/source_prices.py`; send updated PLs/schemes to the maintainer, who
+edits the source and redeploys. The DB is rebuilt from source on deploy
+(`python build_db.py`), so a redeploy/reboot picks up the new data.
 
 ## Data model
 
@@ -78,13 +78,12 @@ Three **separate SQLite databases** (one per team) under `data/`, each with:
 |------|---------|
 | `source_prices.py` | All price lists, clusters & incentive scheme (edit here, then `python build_db.py`) |
 | `pincode_cluster.csv` | 11,504 pincodes → cluster → team |
-| `components_<team>.csv` | Component defaults (auto-exported when edited in Admin) |
-| `price_history.csv` | Flat export of the full price history (auto-exported) |
+| `components_<team>.csv` | Per-cluster component defaults |
+| `price_history.csv` | Flat export of the full price history |
 
 > The `*.db` files are **generated** and git-ignored — rebuild anytime with
-> `python build_db.py`. Because this is the source of truth, price history and
-> admin changes survive a fresh checkout once the CSV/`source_prices.py` edits
-> are committed.
+> `python build_db.py`. Source files are the single source of truth, so the data
+> survives a fresh checkout/redeploy once `source_prices.py` edits are committed.
 
 ## Clusters & teams
 

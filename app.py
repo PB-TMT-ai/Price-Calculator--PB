@@ -99,7 +99,7 @@ brand_header("TMT Price Calculator")
 # --------------------------------------------------------------------------- #
 screens = ["🧮 Calculator"]
 if ROLE == "admin":
-    screens += ["📈 Past Price Lists", "⚙️ Admin"]
+    screens += ["📈 Past Price Lists"]
 
 with st.sidebar:
     st.markdown("### Menu")
@@ -296,96 +296,13 @@ def page_history():
 
 
 # --------------------------------------------------------------------------- #
-#  ADMIN
-# --------------------------------------------------------------------------- #
-def page_admin():
-    if ROLE != "admin":
-        st.error("Admins only.")
-        return
-    st.warning("Admin screen — changes update the live database and the committed CSVs.")
-    clusters = q.get_clusters(team)
-    tab1, tab2, tab3 = st.tabs(["Component defaults", "Add new Price List", "Line-item template"])
-
-    # ---- edit component defaults ----
-    with tab1:
-        cluster_key, cluster_name = select_state_cluster(team, "adm")
-        cur = q.get_components(team, cluster_key)
-        vals = {}
-        for field, label, sign in calc.COMPONENTS:
-            vals[field] = st.number_input(
-                label, value=float(cur.get(field, 0) or 0), step=50.0,
-                format="%.0f", key=f"adm_{field}",
-            )
-        if st.button("💾 Save defaults", type="primary"):
-            q.save_components(team, cluster_key, vals)
-            st.success(f"Saved defaults for {cluster_name}.")
-
-    # ---- add a new price list ----
-    with tab2:
-        st.caption("Fill this whenever prices change. Pre-filled from the latest list.")
-        latest = q.get_latest_pl(team)
-        m1, m2 = st.columns(2)
-        eff = m1.date_input("Effective date")
-        ref = m2.text_input("Reference", value="JODL/ TMT / ")
-        validity = st.text_input("Validity", value=latest["validity"] if latest else "")
-        note = st.text_area("Note / scheme", value="Bend extra Rs 600/MT.")
-        e = st.columns(5)
-        bend = e[0].number_input("Bend extra", value=float(latest["bend_extra"]) if latest else 600.0, step=50.0)
-        d8p = e[1].number_input("8mm proj", value=float(latest["dia8_project"]) if latest else 2500.0, step=50.0)
-        d8r = e[2].number_input("8mm retail", value=float(latest["dia8_retail"]) if latest else 3500.0, step=50.0)
-        d10p = e[3].number_input("10mm proj", value=float(latest["dia10_project"]) if latest else 1000.0, step=50.0)
-        d10r = e[4].number_input("10mm retail", value=float(latest["dia10_retail"]) if latest else 2250.0, step=50.0)
-
-        # Per-cluster grid prefilled from latest list.
-        grid = []
-        for c in clusters:
-            pr = q.get_price(team, latest["id"], c["cluster_key"]) if latest else {}
-            grid.append({"cluster_key": c["cluster_key"], "Cluster": c["name"],
-                         "JSW One 550": (pr or {}).get("fe550"),
-                         "JSW One 550 D": (pr or {}).get("fe550d")})
-        edited = st.data_editor(
-            pd.DataFrame(grid), hide_index=True, use_container_width=True,
-            disabled=["cluster_key", "Cluster"], key="pl_grid",
-        )
-        if st.button("➕ Publish new price list", type="primary"):
-            prices = {
-                r["cluster_key"]: {"fe550": r["JSW One 550"], "fe550d": r["JSW One 550 D"]}
-                for _, r in edited.iterrows()
-            }
-            meta = {"effective_date": str(eff), "reference": ref, "validity": validity,
-                    "note": note, "bend_extra": bend, "dia8_project": d8p,
-                    "dia8_retail": d8r, "dia10_project": d10p, "dia10_retail": d10r}
-            q.add_price_list(team, meta, prices)
-            st.success(f"Published price list effective {eff}. History updated.")
-
-    # ---- downloadable line-item template ----
-    with tab3:
-        st.caption("The exact line-item format to provide on every price/scheme change.")
-        tmpl = pd.DataFrame([
-            {"cluster_key": c["cluster_key"], "Cluster": c["name"],
-             "Major city": c["major_city"], "JSW One 550 (Rs/MT)": "",
-             "JSW One 550 D (Rs/MT)": ""}
-            for c in clusters
-        ])
-        st.dataframe(tmpl, hide_index=True, use_container_width=True)
-        st.download_button(
-            "⬇️ Download CSV template",
-            tmpl.to_csv(index=False).encode(),
-            file_name=f"price_list_template_{team.lower()}.csv",
-            mime="text/csv",
-        )
-        st.markdown(
-            "**Header fields to send each time:** Effective date · Reference · "
-            "Validity · Bend extra · 8/10 mm extras (project & retail) · Note/scheme."
-        )
-
-
+# Price lists & schemes are maintained in data/seed/source_prices.py (updates
+# are provided to the maintainer, not edited in the app), so there is no in-app
+# admin/editing screen — the DB is rebuilt from source on deploy.
 # --------------------------------------------------------------------------- #
 if page == "🧮 Calculator":
     page_calculator()
-elif page == "📈 Past Price Lists":
-    page_history()
 else:
-    page_admin()
+    page_history()
 
 st.caption("JSW One Distribution Ltd · Private Brands · prices exclude GST.")
