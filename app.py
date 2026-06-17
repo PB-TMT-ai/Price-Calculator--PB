@@ -204,9 +204,6 @@ def select_state_cluster(team: str, key: str) -> tuple[str, str]:
 #  CALCULATOR
 # --------------------------------------------------------------------------- #
 def page_calculator():
-    # Live result card pinned at the top (filled in after we compute below).
-    result = st.container(border=True)
-
     # ---------- Step 1 — Location & product ----------
     with st.expander("📍  Step 1 — Location & product", expanded=True):
         cluster_key, cluster_name = select_state_cluster(team, "calc")
@@ -230,16 +227,17 @@ def page_calculator():
         dia = c2.selectbox("Diameter (mm)", calc.DIAS, index=2, key="p_dia")
         segment = "retail"   # Retail only
 
-        # --- Ship From / Ship To ---
-        ship_from = st.radio("Ship From", ["Plant", "Warehouse"], horizontal=True,
-                             key="ship_from")
+        # --- Ship From / Ship To (dropdowns) ---
+        s1, s2 = st.columns(2)
+        ship_from = s1.selectbox("Ship From", ["Plant", "Warehouse"],
+                                 key="ship_from")
         if ship_from == "Plant":
-            ship_to = st.radio("Ship To",
-                               ["Warehouse", "Dealer Shop", "Dealer Site",
-                                "Distributor Site"], horizontal=True, key="ship_to")
+            ship_to = s2.selectbox("Ship To",
+                                   ["Warehouse", "Dealer Shop", "Dealer Site",
+                                    "Distributor Site"], key="ship_to")
         else:
             ship_to = "Dealer"   # warehouse ships onward to dealer
-            st.caption("Shipping from Warehouse → secondary freight applies.")
+            s2.caption("From Warehouse → secondary freight applies.")
 
     # Secondary freight (Freight to Dealer) applies only when shipping from a
     # warehouse. Stocking incentive applies only on Plant → Warehouse moves.
@@ -248,9 +246,8 @@ def page_calculator():
 
     price_row = q.get_price(team, pl["id"], cluster_key)
     if price_row is None or price_row.get(calc.PRODUCTS[product]) is None:
-        with result:
-            st.error(f"No **{product}** price published for {cluster_name} "
-                     f"in this price list. Try the other product.")
+        st.error(f"No **{product}** price published for {cluster_name} "
+                 f"in this price list. Try the other product.")
         return
 
     # ---------- Step 2 — Components (toggle-gated) ----------
@@ -310,22 +307,7 @@ def page_calculator():
     mult = (1 + GST_RATE) if show_gst else 1.0
     gst_note = " (incl. GST)" if show_gst else ""
 
-    # ---------- Live result card (rendered at the very top) ----------
     ship_label = f"{ship_from} → {ship_to}" if ship_from == "Plant" else "Warehouse"
-    with result:
-        st.markdown(f"#### 🧾 {cluster_name}")
-        st.caption(f"{product} · {dia} mm · {btype} · Retail  |  Ship: {ship_label}  |  "
-                   f"PL {pl['effective_date']}")
-        m1, m2 = st.columns(2)
-        m1.metric(f"Net Landed / MT{gst_note}", rupee(landed * mult),
-                  delta=(f"−{rupee(incentive_applied)} incentive"
-                         if incentive_applied else None), delta_color="inverse")
-        m2.metric(f"Order total · {qty:g} MT", rupee(landed * qty * mult))
-        st.caption(
-            f"Sub-total {rupee(sub_total * mult)}/MT "
-            f"· {n_components} component(s) applied"
-            + (f" · incentives −{rupee(incentive_applied)}" if incentive_applied else "")
-        )
 
     # ---------- Details ----------
     with st.expander("🧮 Base price build-up"):
@@ -390,6 +372,22 @@ def page_calculator():
         st.download_button("⬇️ Download quote image (.png)", img,
                            file_name=f"jsw_quote_{cluster_key.lower()}.png",
                            mime="image/png")
+
+    # ---------- Result card (after the quote) ----------
+    with st.container(border=True):
+        st.markdown(f"#### 🧾 {cluster_name}")
+        st.caption(f"{product} · {dia} mm · {btype} · Retail  |  Ship: {ship_label}  |  "
+                   f"PL {pl['effective_date']}")
+        m1, m2 = st.columns(2)
+        m1.metric(f"Net Landed / MT{gst_note}", rupee(landed * mult),
+                  delta=(f"−{rupee(incentive_applied)} incentive"
+                         if incentive_applied else None), delta_color="inverse")
+        m2.metric(f"Order total · {qty:g} MT", rupee(landed * qty * mult))
+        st.caption(
+            f"Sub-total {rupee(sub_total * mult)}/MT "
+            f"· {n_components} component(s) applied"
+            + (f" · incentives −{rupee(incentive_applied)}" if incentive_applied else "")
+        )
 
     with st.expander("⚖️ Blended rate (mixed-diameter order)"):
         st.caption("Enter the quantity (MT) of each diameter in the order, "
