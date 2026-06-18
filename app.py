@@ -18,6 +18,30 @@ from pricing.database import TEAMS
 st.set_page_config(page_title="JSW One TMT Price Calculator",
                    page_icon="🧱", layout="centered")
 
+# --------------------------------------------------------------------------- #
+#  Maintenance / offline switch
+#  Set MAINTENANCE = False to bring the app back online.
+# --------------------------------------------------------------------------- #
+MAINTENANCE = True
+
+if MAINTENANCE:
+    st.markdown(
+        """
+        <style>
+          [data-testid="stToolbar"], [data-testid="stToolbarActions"],
+          [data-testid="stStatusWidget"], #MainMenu, header, footer,
+          [data-testid="stHeader"], [data-testid="stDecoration"],
+          [data-testid="stSidebar"], [class*="viewerBadge"] { display: none !important; }
+          .stApp { background: #ffffff; }
+          .block-container { padding-top: 42vh; }
+          .offline { text-align: center; color: #9aa0a6; font-size: 1.1rem; }
+        </style>
+        <p class="offline">offline</p>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.stop()
+
 # JSW One brand styling — colourful, card-based & mobile friendly.
 JSW_BLUE = "#0A4DA2"
 JSW_DARK = "#06306A"
